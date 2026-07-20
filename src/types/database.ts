@@ -21,13 +21,13 @@ export interface Listing {
   owner_id: string;
   title: string;
   description: string;
-  photo_url: string;
+  photo_url: string | null;
   quantity: string;
   best_by: string | null;
   pickup_window_start: string;
   pickup_window_end: string;
-  location: unknown; // PostGIS geography point
-  approx_location_label: string;
+  location: unknown | null; // PostGIS geography point
+  approx_location_label: string | null;
   exact_address: string | null;
   status: ListingStatus;
   created_at: string;
