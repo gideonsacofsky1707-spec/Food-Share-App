@@ -15,9 +15,14 @@ export async function NavHeader() {
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           {user ? (
-            <Link href="/profile" className="font-medium underline">
-              Profile
-            </Link>
+            <>
+              <Link href="/listings" className="font-medium">
+                My listings
+              </Link>
+              <Link href="/profile" className="font-medium underline">
+                Profile
+              </Link>
+            </>
           ) : (
             <>
               <Link href="/login" className="font-medium">
