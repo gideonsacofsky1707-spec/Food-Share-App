@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { deleteListingAction } from "@/app/listings/actions";
 import { DeleteListingForm } from "@/components/listings/delete-listing-button";
 import { formatDateTime } from "@/lib/format";
-import type { Listing } from "@/types/database";
+import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
+import type { PublicListing } from "@/types/database";
 
 export default async function ListingsPage({
   searchParams,
@@ -21,11 +22,11 @@ export default async function ListingsPage({
 
   const { data: listings } = await supabase
     .from("listings")
-    .select("*")
+    .select(PUBLIC_LISTING_COLUMNS)
     .eq("owner_id", user.id)
     .neq("status", "removed")
     .order("created_at", { ascending: false })
-    .returns<Listing[]>();
+    .returns<PublicListing[]>();
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-16">

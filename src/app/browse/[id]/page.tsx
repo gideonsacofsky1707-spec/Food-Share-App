@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/format";
-import type { Listing } from "@/types/database";
+import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
+import type { ListingPrivateLocation, PublicListing } from "@/types/database";
 
 export default async function ListingDetailPage({
   params,
@@ -14,13 +15,20 @@ export default async function ListingDetailPage({
   const supabase = await createClient();
   const { data: listing } = await supabase
     .from("listings")
-    .select("*")
+    .select(PUBLIC_LISTING_COLUMNS)
     .eq("id", id)
-    .single<Listing>();
+    .single<PublicListing>();
 
   if (!listing) {
     notFound();
   }
+
+  // Empty unless the caller is the owner (or, from milestone 5 on, an
+  // accepted claimer) - see get_listing_private_location() in
+  // 0004_listing_location_privacy.sql.
+  const { data: privateLocation } = await supabase
+    .rpc("get_listing_private_location", { p_listing_id: id })
+    .maybeSingle<ListingPrivateLocation>();
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-16">
@@ -68,11 +76,18 @@ export default async function ListingDetailPage({
             <dd>{formatDateTime(listing.best_by)}</dd>
           </div>
         )}
-        {listing.approx_location_label && (
+        {privateLocation?.exact_address ? (
           <div className="flex gap-2">
-            <dt className="font-medium text-zinc-500 dark:text-zinc-400">Location</dt>
-            <dd>{listing.approx_location_label}</dd>
+            <dt className="font-medium text-zinc-500 dark:text-zinc-400">Pickup address</dt>
+            <dd>{privateLocation.exact_address}</dd>
           </div>
+        ) : (
+          listing.approx_location_label && (
+            <div className="flex gap-2">
+              <dt className="font-medium text-zinc-500 dark:text-zinc-400">General area</dt>
+              <dd>{listing.approx_location_label}</dd>
+            </div>
+          )
         )}
       </dl>
     </main>

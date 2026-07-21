@@ -1,17 +1,18 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/format";
-import type { Listing } from "@/types/database";
+import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
+import type { PublicListing } from "@/types/database";
 
 export default async function BrowsePage() {
   const supabase = await createClient();
 
   const { data: listings } = await supabase
     .from("listings")
-    .select("*")
+    .select(PUBLIC_LISTING_COLUMNS)
     .eq("status", "active")
     .order("created_at", { ascending: false })
-    .returns<Listing[]>();
+    .returns<PublicListing[]>();
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-16">

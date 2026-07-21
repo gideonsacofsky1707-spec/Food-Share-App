@@ -16,6 +16,11 @@ export interface User {
   is_verified: boolean;
 }
 
+// `location` and `exact_address` are as sensitive as a pinned address, so
+// their columns are revoked from anon/authenticated at the DB level (see
+// 0004_listing_location_privacy.sql) - only reachable via
+// get_listing_private_location(), and only for the listing's owner. Normal
+// queries select PublicListing (below) instead of this full shape.
 export interface Listing {
   id: string;
   owner_id: string;
@@ -26,11 +31,19 @@ export interface Listing {
   best_by: string | null;
   pickup_window_start: string;
   pickup_window_end: string;
-  location: unknown | null; // PostGIS geography point
+  location: unknown | null; // PostGIS geography point; not directly selectable, see above
   approx_location_label: string | null;
-  exact_address: string | null;
+  exact_address: string | null; // not directly selectable, see above
   status: ListingStatus;
   created_at: string;
+}
+
+export type PublicListing = Omit<Listing, "location" | "exact_address">;
+
+export interface ListingPrivateLocation {
+  exact_address: string | null;
+  lat: number;
+  lng: number;
 }
 
 export interface Claim {

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { geocodeAddress } from "@/lib/google-geocoding";
 
 type ListingFields = {
   title: string;
@@ -11,6 +12,7 @@ type ListingFields = {
   best_by: string | null;
   pickup_window_start: string;
   pickup_window_end: string;
+  address: string;
 };
 
 function parseListingFields(formData: FormData): ListingFields | { error: string } {
@@ -20,8 +22,9 @@ function parseListingFields(formData: FormData): ListingFields | { error: string
   const bestByRaw = String(formData.get("best_by") ?? "").trim();
   const pickupStart = String(formData.get("pickup_window_start") ?? "").trim();
   const pickupEnd = String(formData.get("pickup_window_end") ?? "").trim();
+  const address = String(formData.get("address") ?? "").trim();
 
-  if (!title || !description || !quantity || !pickupStart || !pickupEnd) {
+  if (!title || !description || !quantity || !pickupStart || !pickupEnd || !address) {
     return { error: "Please fill in all required fields." };
   }
 
@@ -36,6 +39,27 @@ function parseListingFields(formData: FormData): ListingFields | { error: string
     best_by: bestByRaw || null,
     pickup_window_start: pickupStart,
     pickup_window_end: pickupEnd,
+    address,
+  };
+}
+
+async function resolveLocationFields(address: string): Promise<
+  | { ok: true; location: string; approx_location_label: string; exact_address: string }
+  | { ok: false; error: string }
+> {
+  const geocoded = await geocodeAddress(address);
+  if (!geocoded) {
+    return {
+      ok: false,
+      error: "Could not find that address. Please pick a suggestion from the list.",
+    };
+  }
+
+  return {
+    ok: true,
+    location: `POINT(${geocoded.lng} ${geocoded.lat})`,
+    approx_location_label: geocoded.approxLocationLabel,
+    exact_address: geocoded.formattedAddress,
   };
 }
 
@@ -75,9 +99,21 @@ export async function createListingAction(formData: FormData) {
     redirect(`/listings/new?error=${encodeURIComponent(fields.error)}`);
   }
 
+  const { address, ...listingFields } = fields;
+  const location = await resolveLocationFields(address);
+  if (!location.ok) {
+    redirect(`/listings/new?error=${encodeURIComponent(location.error)}`);
+  }
+
   const { data: listing, error } = await supabase
     .from("listings")
-    .insert({ ...fields, owner_id: user.id })
+    .insert({
+      ...listingFields,
+      location: location.location,
+      approx_location_label: location.approx_location_label,
+      exact_address: location.exact_address,
+      owner_id: user.id,
+    })
     .select("id")
     .single();
 
@@ -113,9 +149,20 @@ export async function updateListingAction(formData: FormData) {
     redirect(`/listings/${id}/edit?error=${encodeURIComponent(fields.error)}`);
   }
 
+  const { address, ...listingFields } = fields;
+  const location = await resolveLocationFields(address);
+  if (!location.ok) {
+    redirect(`/listings/${id}/edit?error=${encodeURIComponent(location.error)}`);
+  }
+
   const { error } = await supabase
     .from("listings")
-    .update(fields)
+    .update({
+      ...listingFields,
+      location: location.location,
+      approx_location_label: location.approx_location_label,
+      exact_address: location.exact_address,
+    })
     .eq("id", id)
     .eq("owner_id", user.id);
 
