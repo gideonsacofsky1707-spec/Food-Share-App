@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { sendMessageAction } from "@/app/claims/actions";
+import { ChatThread } from "@/components/claims/chat-thread";
 import { formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
 import type { ClaimWithParticipants, Message } from "@/types/database";
@@ -83,36 +84,12 @@ export default async function ClaimChatPage({
         </p>
       ) : (
         <>
-          <ul className="flex flex-col gap-3">
-            {messages.length === 0 ? (
-              <li className="text-sm text-zinc-600 dark:text-zinc-400">
-                No messages yet. Say hello and figure out the pickup details.
-              </li>
-            ) : (
-              messages.map((message) => {
-                const isMine = message.sender_id === user.id;
-                return (
-                  <li
-                    key={message.id}
-                    className={`flex flex-col gap-0.5 rounded-xl px-3 py-2 text-sm ${
-                      isMine
-                        ? "self-end bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
-                        : "self-start bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"
-                    }`}
-                  >
-                    <span>{message.body}</span>
-                    <span
-                      className={`text-[10px] ${
-                        isMine ? "text-zinc-300 dark:text-zinc-600" : "text-zinc-500"
-                      }`}
-                    >
-                      {isMine ? "You" : otherParty.display_name} · {formatDateTime(message.created_at)}
-                    </span>
-                  </li>
-                );
-              })
-            )}
-          </ul>
+          <ChatThread
+            claimId={claim.id}
+            initialMessages={messages}
+            currentUserId={user.id}
+            otherPartyName={otherParty.display_name}
+          />
 
           <form action={sendMessageAction} className="flex gap-2">
             <input type="hidden" name="claim_id" value={claim.id} />
