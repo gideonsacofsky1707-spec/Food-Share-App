@@ -78,6 +78,10 @@ Run each migration once, in order, in your project's Supabase SQL editor
   completely empty). This creates the `supabase_realtime` publication if
   it doesn't exist at all, then adds `messages`/`notifications` - covers
   both possible explanations without needing to know which one it was.
+- [`0013_map_pins.sql`](./supabase/migrations/0013_map_pins.sql) —
+  `get_active_listing_map_pins()`, a public `SECURITY DEFINER` function
+  returning *rounded* coordinates (~111m) for every active listing.
+  Required before `/browse`'s map view will show any pins.
 
 ## Project structure
 
@@ -94,6 +98,8 @@ src/
   app/notifications/           # notifications page + "mark read" action
   components/                  # shared UI components
   components/listings/         # listing form + Places Autocomplete address field
+  components/browse/           # list/map toggle, list view, map view (List/Map on /browse)
+  components/google-maps-script.tsx      # shared <script> loader (Autocomplete + map both use it)
   components/claims/chat-thread.tsx     # client component: live message list
   components/notification-bell.tsx      # client component: live unread badge
   lib/supabase/               # Supabase client (browser + server + middleware)
@@ -134,6 +140,33 @@ the unread count and subscribes to `postgres_changes` INSERT events
 scoped to `user_id=eq.<current user>`, incrementing live as new
 notifications arrive - no polling. Clicking a notification marks it read
 and navigates to the linked claim/listing in one step.
+
+### Map view
+
+`/browse` has a List/Map toggle (`BrowseViewToggle`, client-side state
+only - the list itself is rendered server-side and passed in as an
+already-resolved prop, so it's never re-hydrated and can't hit the
+timezone-hydration bug `ChatThread` did). Map view (`ListingsMap`) plots
+a pin per active listing using the Google Maps JS API, clustering nearby
+pins via `@googlemaps/markerclusterer`; clicking an individual pin shows
+a preview card (photo, title, quantity) linking to `/browse/[id]`.
+
+Pins use **rounded** coordinates (~111m, `round(lat/lng, 3)`), not the
+real ones - PROJECT.md is explicit that map view should show
+"approximate pins (exact address hidden until claimed)", and raw lat/lng
+is exactly as precise as a street address. `get_active_listing_map_pins()`
+is `SECURITY DEFINER` (same reason as `get_listing_private_location`:
+`location` is column-revoked from anon/authenticated) but unlike that
+function, it's callable by anyone and only ever returns the rounded
+version, for every active listing rather than gating on
+ownership/acceptance.
+
+`AddressAutocomplete` and `ListingsMap` share one script loader
+(`GoogleMapsScript`, fixed `id="google-maps-js"`) rather than each
+injecting their own `<script src="…api/js">` tag - Google's JS API logs
+a warning (and can misbehave) if it's ever loaded more than once on the
+same page, which would otherwise happen the moment a user navigates
+between a listing form and `/browse` within one session.
 
 ### Chat
 

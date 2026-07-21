@@ -46,6 +46,17 @@ export interface ListingPrivateLocation {
   lng: number;
 }
 
+// From get_active_listing_map_pins() - approx_lat/lng are rounded to
+// ~111m, never the real coordinates. See 0013_map_pins.sql.
+export interface MapPin {
+  id: string;
+  title: string;
+  photo_url: string | null;
+  quantity: string;
+  approx_lat: number;
+  approx_lng: number;
+}
+
 export interface Claim {
   id: string;
   listing_id: string;
