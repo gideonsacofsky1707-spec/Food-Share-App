@@ -47,6 +47,9 @@ Run each migration once, in order, in your project's Supabase SQL editor
   to `claimed` and declines competing requests. Extends
   `get_listing_private_location` to also allow an accepted claimer.
   Required before requesting a listing.
+- [`0006_fix_public_listings_policy.sql`](./supabase/migrations/0006_fix_public_listings_policy.sql) —
+  idempotently re-applies the `0003` public-read policy. Run this if
+  `/browse` only ever shows the signed-in viewer's own listings.
 
 ## Project structure
 
