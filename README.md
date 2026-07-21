@@ -72,6 +72,12 @@ Run each migration once, in order, in your project's Supabase SQL editor
   broadens `user_is_accepted_claim_participant`'s EXECUTE grant to
   `anon`. A debugging hardening step, not expected to change behavior on
   its own - see "Debugging a stalled subscription" below.
+- [`0012_ensure_realtime_publication.sql`](./supabase/migrations/0012_ensure_realtime_publication.sql) —
+  `0010`'s `ALTER PUBLICATION` turned out not to have taken effect
+  (confirmed via the `pg_publication_tables` query below coming back
+  completely empty). This creates the `supabase_realtime` publication if
+  it doesn't exist at all, then adds `messages`/`notifications` - covers
+  both possible explanations without needing to know which one it was.
 
 ## Project structure
 
