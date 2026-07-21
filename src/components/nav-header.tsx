@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { NotificationBell } from "@/components/notification-bell";
 
 export async function NavHeader() {
   const supabase = await createClient();
@@ -35,14 +36,7 @@ export async function NavHeader() {
               <Link href="/requests" className="font-medium">
                 My requests
               </Link>
-              <Link href="/notifications" className="relative font-medium" aria-label="Notifications">
-                🔔
-                {unreadCount > 0 && (
-                  <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-semibold text-white">
-                    {unreadCount > 9 ? "9+" : unreadCount}
-                  </span>
-                )}
-              </Link>
+              <NotificationBell userId={user.id} initialUnreadCount={unreadCount} />
               <Link href="/profile" className="font-medium underline">
                 Profile
               </Link>

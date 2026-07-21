@@ -64,28 +64,34 @@ Run each migration once, in order, in your project's Supabase SQL editor
   `messages` table + RLS scoped to accepted-claim participants, and a
   trigger that notifies whichever participant didn't send a given
   message. Required before the chat on `/claims/[id]` will work.
+- [`0010_enable_realtime.sql`](./supabase/migrations/0010_enable_realtime.sql) —
+  adds `messages` and `notifications` to the `supabase_realtime`
+  publication (idempotently). Required before the chat thread and the nav
+  bell update live instead of only on page load.
 
 ## Project structure
 
 ```
 src/
-  app/                    # routes (App Router)
-  app/auth/actions.ts     # server actions: sign up, log in, log out, profile updates
-  app/listings/           # listing CRUD pages + server actions (owner-only)
+  app/                       # routes (App Router)
+  app/auth/actions.ts        # server actions: sign up, log in, log out, profile updates
+  app/listings/               # listing CRUD pages + server actions (owner-only)
   app/listings/[id]/requests/ # owner's incoming requests for one listing
-  app/browse/             # public listing browse + detail pages (+ "Request" action)
-  app/requests/           # claimer's "my requests" page
-  app/claims/actions.ts   # server actions: request, accept, decline, send message
-  app/claims/[id]/         # chat thread for one accepted claim
-  app/notifications/      # notifications page + "mark read" action
-  components/             # shared UI components
-  components/listings/    # listing form + Places Autocomplete address field
-  lib/supabase/           # Supabase client (browser + server + middleware)
-  lib/format.ts           # shared display formatting (e.g. dates)
-  lib/google-geocoding.ts # server-side address -> lat/lng + area label
-  lib/listings.ts         # shared "public" column list for listings queries
-  types/                  # shared TypeScript types, incl. database.ts (schema types)
-supabase/migrations/       # SQL to run against your Supabase project
+  app/browse/                 # public listing browse + detail pages (+ "Request" action)
+  app/requests/                # claimer's "my requests" page
+  app/claims/actions.ts       # server actions: request, accept, decline, send message
+  app/claims/[id]/             # chat thread for one accepted claim
+  app/notifications/           # notifications page + "mark read" action
+  components/                  # shared UI components
+  components/listings/         # listing form + Places Autocomplete address field
+  components/claims/chat-thread.tsx     # client component: live message list
+  components/notification-bell.tsx      # client component: live unread badge
+  lib/supabase/               # Supabase client (browser + server + middleware)
+  lib/format.ts               # shared display formatting (e.g. dates)
+  lib/google-geocoding.ts     # server-side address -> lat/lng + area label
+  lib/listings.ts             # shared "public" column list for listings queries
+  types/                      # shared TypeScript types, incl. database.ts (schema types)
+supabase/migrations/          # SQL to run against your Supabase project
 ```
 
 ### Listing location privacy
@@ -112,9 +118,12 @@ Notification rows are created entirely by Postgres triggers on
 `claims` (request -> notify owner, accept/decline -> notify claimer) -
 there's no client-side insert path (`notifications` has no INSERT policy;
 only the trigger functions, running SECURITY DEFINER, can write to it).
-The bell in the nav shows an unread count read on each page load; there's
-no realtime subscription, by design - clicking a notification marks it
-read and navigates to the linked claim/listing in one step.
+The nav's `NotificationBell` (a client component; `NavHeader` itself stays
+a server component and passes it the server-computed initial count) shows
+the unread count and subscribes to `postgres_changes` INSERT events
+scoped to `user_id=eq.<current user>`, incrementing live as new
+notifications arrive - no polling. Clicking a notification marks it read
+and navigates to the linked claim/listing in one step.
 
 ### Chat
 
@@ -126,6 +135,20 @@ Access is gated the same way as location privacy: a
 escape hatch as `user_owns_listing`/`user_has_claim_on_listing`) backs
 both the SELECT and INSERT policies on `messages`, so only the claimer or
 the listing's owner can read or post in a given claim's thread, and only
-once it's `accepted`. Messages are read on page load - no realtime
-subscription, per the ask - and sending one triggers a notification to
-whichever participant didn't send it.
+once it's `accepted`. The message list (`ChatThread`, a client component)
+subscribes to `postgres_changes` INSERT events scoped to
+`claim_id=eq.<this claim>` and appends new messages live; sending is still
+a plain server action + redirect, so no client-side send logic is needed.
+
+#### Realtime relies on RLS - don't relax it to "fix" a subscription
+
+Supabase Realtime's `postgres_changes` re-checks each change against the
+*same* SELECT policies as a normal query, using the subscribing client's
+JWT. Neither policy needed to change for this to be safe - both were
+already scoped to `auth.uid()` before realtime existed for these tables
+(`user_id = auth.uid()` on `notifications`,
+`user_is_accepted_claim_participant(claim_id, auth.uid())` on `messages`).
+If a subscription ever seems to "not receive" an update, the fix is almost
+always that the row genuinely isn't visible to that user under RLS (check
+with the same query a normal page load would run) - not to loosen the
+policy, which would leak other users' rows to every subscriber instead.
