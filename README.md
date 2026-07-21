@@ -50,6 +50,11 @@ Run each migration once, in order, in your project's Supabase SQL editor
 - [`0006_fix_public_listings_policy.sql`](./supabase/migrations/0006_fix_public_listings_policy.sql) —
   idempotently re-applies the `0003` public-read policy. Run this if
   `/browse` only ever shows the signed-in viewer's own listings.
+- [`0007_fix_listings_claims_recursion.sql`](./supabase/migrations/0007_fix_listings_claims_recursion.sql) —
+  breaks a circular RLS dependency between `listings` and `claims`
+  (each had a policy querying the other) by moving the cross-table checks
+  into `SECURITY DEFINER` functions. Run this if creating a listing fails
+  with "infinite recursion detected in policy for relation listings".
 
 ## Project structure
 
