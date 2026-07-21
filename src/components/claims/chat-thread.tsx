@@ -5,6 +5,27 @@ import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format";
 import type { Message } from "@/types/database";
 
+// formatDateTime() uses toLocaleString(), which depends on the runtime's
+// timezone/locale. The server (Node) and this browser almost never agree,
+// so rendering it directly in a client component's initial render makes
+// the server-rendered HTML and the client's hydration render disagree on
+// this exact text - a hydration mismatch (React error #418), not just a
+// cosmetic difference. Rendering nothing until after mount sidesteps it:
+// server and the pre-hydration client render both produce the same
+// (empty) output, and the real local-time string swaps in immediately
+// after via a client-only effect, once there's no longer anything for
+// hydration to compare against.
+function MessageTimestamp({ value }: { value: string }) {
+  const [mounted, setMounted] = useState(false);
+  // Deliberately setState-in-effect: this is the standard "only render
+  // after mount" pattern for content that must differ between server and
+  // client (see the comment above), not a derived-state effect the lint
+  // rule is meant to catch.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setMounted(true), []);
+  return mounted ? <>{formatDateTime(value)}</> : null;
+}
+
 export function ChatThread({
   claimId,
   initialMessages,
@@ -89,7 +110,7 @@ export function ChatThread({
             <span
               className={`text-[10px] ${isMine ? "text-zinc-300 dark:text-zinc-600" : "text-zinc-500"}`}
             >
-              {isMine ? "You" : otherPartyName} · {formatDateTime(message.created_at)}
+              {isMine ? "You" : otherPartyName} · <MessageTimestamp value={message.created_at} />
             </span>
           </li>
         );
