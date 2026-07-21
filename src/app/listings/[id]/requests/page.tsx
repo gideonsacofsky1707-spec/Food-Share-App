@@ -120,13 +120,13 @@ export default async function ListingRequestsPage({
                     </button>
                   </form>
                 </div>
-              ) : claim.status === "accepted" ? (
+              ) : claim.status === "accepted" || claim.status === "completed" ? (
                 <div className="flex shrink-0 flex-col items-end gap-1">
                   <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                     {claim.status}
                   </span>
                   <Link href={`/claims/${claim.id}`} className="text-sm font-medium underline">
-                    Open chat
+                    {claim.status === "completed" ? "Open chat & rate" : "Open chat"}
                   </Link>
                 </div>
               ) : (

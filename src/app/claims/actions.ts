@@ -76,6 +76,69 @@ export async function declineClaimAction(formData: FormData) {
   redirect(`/listings/${listingId}/requests?success=${encodeURIComponent("Request declined.")}`);
 }
 
+export async function markCollectedAction(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const claimId = String(formData.get("claim_id") ?? "");
+  const listingId = String(formData.get("listing_id") ?? "");
+  if (!claimId) redirect("/requests");
+
+  const { error } = await supabase.rpc("mark_claim_collected", { p_claim_id: claimId });
+
+  if (error) {
+    redirect(`/claims/${claimId}?error=${encodeURIComponent(error.message)}`);
+  }
+
+  revalidatePath(`/claims/${claimId}`);
+  revalidatePath("/requests");
+  if (listingId) revalidatePath(`/listings/${listingId}/requests`);
+  redirect(
+    `/claims/${claimId}?success=${encodeURIComponent("Marked as collected. You can now rate this exchange.")}`,
+  );
+}
+
+export async function submitRatingAction(formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const claimId = String(formData.get("claim_id") ?? "");
+  const rateeId = String(formData.get("ratee_id") ?? "");
+  const comment = String(formData.get("comment") ?? "").trim();
+  const score = Number(formData.get("score"));
+  if (!claimId) redirect("/requests");
+
+  if (!Number.isInteger(score) || score < 1 || score > 5) {
+    redirect(`/claims/${claimId}?error=${encodeURIComponent("Pick a star rating from 1 to 5.")}`);
+  }
+
+  const { error } = await supabase.from("ratings").insert({
+    claim_id: claimId,
+    rater_id: user.id,
+    ratee_id: rateeId,
+    score,
+    comment: comment || null,
+  });
+
+  if (error) {
+    const message =
+      error.code === "23505"
+        ? "You've already rated this exchange."
+        : "Could not submit that rating.";
+    redirect(`/claims/${claimId}?error=${encodeURIComponent(message)}`);
+  }
+
+  revalidatePath(`/claims/${claimId}`);
+  revalidatePath("/profile");
+  redirect(`/claims/${claimId}?success=${encodeURIComponent("Thanks for rating this exchange.")}`);
+}
+
 export async function sendMessageAction(formData: FormData) {
   const supabase = await createClient();
   const {

@@ -64,6 +64,11 @@ export default async function ProfilePage({
             🍲
           </div>
         )}
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          {profile && profile.rating_count > 0
+            ? `★ ${profile.rating_avg.toFixed(1)} (${profile.rating_count} rating${profile.rating_count === 1 ? "" : "s"})`
+            : "No ratings yet"}
+        </p>
         <form action={uploadAvatarAction} className="flex flex-col items-center gap-2">
           <input type="file" name="avatar" accept="image/*" required />
           <button

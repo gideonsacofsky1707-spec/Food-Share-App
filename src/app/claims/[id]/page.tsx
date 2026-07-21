@@ -1,21 +1,23 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { sendMessageAction } from "@/app/claims/actions";
+import { markCollectedAction, sendMessageAction } from "@/app/claims/actions";
 import { ChatThread } from "@/components/claims/chat-thread";
+import { MarkCollectedForm } from "@/components/claims/mark-collected-form";
+import { RatingForm } from "@/components/claims/rating-form";
 import { formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
-import type { ClaimWithParticipants, Message } from "@/types/database";
+import type { ClaimWithParticipants, Message, Rating } from "@/types/database";
 
 export default async function ClaimChatPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; success?: string }>;
 }) {
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, success } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -37,9 +39,13 @@ export default async function ClaimChatPage({
 
   const isOwner = user.id === claim.listing.owner_id;
   const otherParty = isOwner ? claim.claimer : claim.listing.owner;
+  const otherPartyId = isOwner ? claim.claimer_id : claim.listing.owner_id;
 
+  // Chat access spans both "accepted" (pickup being arranged) and
+  // "completed" (already picked up) - see user_is_accepted_claim_participant
+  // in 0014_ratings.sql for why the thread doesn't disappear once collected.
   let messages: Message[] = [];
-  if (claim.status === "accepted") {
+  if (claim.status === "accepted" || claim.status === "completed") {
     const { data } = await supabase
       .from("messages")
       .select("*")
@@ -47,6 +53,17 @@ export default async function ClaimChatPage({
       .order("created_at", { ascending: true })
       .returns<Message[]>();
     messages = data ?? [];
+  }
+
+  let myRating: Rating | null = null;
+  if (claim.status === "completed") {
+    const { data } = await supabase
+      .from("ratings")
+      .select("*")
+      .eq("claim_id", id)
+      .eq("rater_id", user.id)
+      .maybeSingle<Rating>();
+    myRating = data;
   }
 
   return (
@@ -76,14 +93,27 @@ export default async function ClaimChatPage({
           {error}
         </p>
       )}
+      {success && (
+        <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">
+          {success}
+        </p>
+      )}
 
-      {claim.status !== "accepted" ? (
+      {claim.status !== "accepted" && claim.status !== "completed" ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Chat opens once this request is accepted. Current status:{" "}
           <span className="font-medium text-zinc-900 dark:text-zinc-100">{claim.status}</span>
         </p>
       ) : (
         <>
+          {claim.status === "accepted" && (
+            <MarkCollectedForm
+              claimId={claim.id}
+              listingId={claim.listing.id}
+              action={markCollectedAction}
+            />
+          )}
+
           <ChatThread
             claimId={claim.id}
             initialMessages={messages}
@@ -91,22 +121,38 @@ export default async function ClaimChatPage({
             otherPartyName={otherParty.display_name}
           />
 
-          <form action={sendMessageAction} className="flex gap-2">
-            <input type="hidden" name="claim_id" value={claim.id} />
-            <input
-              type="text"
-              name="body"
-              required
-              placeholder="Write a message…"
-              className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-            />
-            <button
-              type="submit"
-              className="shrink-0 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
-            >
-              Send
-            </button>
-          </form>
+          {claim.status === "accepted" && (
+            <form action={sendMessageAction} className="flex gap-2">
+              <input type="hidden" name="claim_id" value={claim.id} />
+              <input
+                type="text"
+                name="body"
+                required
+                placeholder="Write a message…"
+                className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+              />
+              <button
+                type="submit"
+                className="shrink-0 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+              >
+                Send
+              </button>
+            </form>
+          )}
+
+          {claim.status === "completed" &&
+            (myRating ? (
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                You rated this exchange: {"★".repeat(myRating.score)}
+                {"☆".repeat(5 - myRating.score)}
+              </p>
+            ) : (
+              <RatingForm
+                claimId={claim.id}
+                rateeId={otherPartyId}
+                rateeName={otherParty.display_name}
+              />
+            ))}
         </>
       )}
     </main>

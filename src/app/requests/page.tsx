@@ -20,10 +20,15 @@ export default async function MyRequestsPage() {
     .order("created_at", { ascending: false })
     .returns<ClaimWithListing[]>();
 
-  // For accepted claims only: get_listing_private_location() reveals the
-  // owner's exact_address to an accepted claimer (0005_claims.sql).
+  // For accepted or completed claims: get_listing_private_location() reveals
+  // the owner's exact_address to an accepted/completed claimer
+  // (0005_claims.sql, widened by 0014_ratings.sql to also cover completed).
   const acceptedListingIds = [
-    ...new Set((claims ?? []).filter((c) => c.status === "accepted").map((c) => c.listing.id)),
+    ...new Set(
+      (claims ?? [])
+        .filter((c) => c.status === "accepted" || c.status === "completed")
+        .map((c) => c.listing.id),
+    ),
   ];
   const privateLocations = new Map<string, ListingPrivateLocation>();
   await Promise.all(
@@ -87,10 +92,12 @@ export default async function MyRequestsPage() {
                   </div>
                 </Link>
 
-                {claim.status === "accepted" && (
+                {(claim.status === "accepted" || claim.status === "completed") && (
                   <div className="mt-3 rounded-lg bg-green-50 p-3 dark:bg-green-950">
                     <p className="text-sm font-semibold text-green-800 dark:text-green-200">
-                      ✓ Accepted — pickup details
+                      {claim.status === "completed"
+                        ? "✓ Picked up — rate the exchange"
+                        : "✓ Accepted — pickup details"}
                     </p>
                     <dl className="mt-2 flex flex-col gap-1 text-sm">
                       <div className="flex gap-2">
@@ -114,7 +121,7 @@ export default async function MyRequestsPage() {
                       href={`/claims/${claim.id}`}
                       className="mt-2 inline-block text-sm font-medium underline"
                     >
-                      Open chat
+                      {claim.status === "completed" ? "Open chat & rate" : "Open chat"}
                     </Link>
                   </div>
                 )}
