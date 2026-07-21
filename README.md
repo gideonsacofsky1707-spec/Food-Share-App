@@ -55,6 +55,11 @@ Run each migration once, in order, in your project's Supabase SQL editor
   (each had a policy querying the other) by moving the cross-table checks
   into `SECURITY DEFINER` functions. Run this if creating a listing fails
   with "infinite recursion detected in policy for relation listings".
+- [`0008_notifications.sql`](./supabase/migrations/0008_notifications.sql) —
+  `notifications` table + RLS, and triggers on `claims` that create a
+  notification when a listing is requested (owner notified) and when a
+  request is accepted or declined (claimer notified). Required before the
+  notification bell in the nav will show anything.
 
 ## Project structure
 
@@ -67,6 +72,7 @@ src/
   app/browse/             # public listing browse + detail pages (+ "Request" action)
   app/requests/           # claimer's "my requests" page
   app/claims/actions.ts   # server actions: request, accept, decline
+  app/notifications/      # notifications page + "mark read" action
   components/             # shared UI components
   components/listings/    # listing form + Places Autocomplete address field
   lib/supabase/           # Supabase client (browser + server + middleware)
@@ -94,3 +100,13 @@ A signed-in, non-owner visitor can request an active listing from
 listing to `claimed` and auto-declines any other pending requests on it
 (via the `accept_claim` Postgres function, so both writes are atomic).
 Claimers track their requests at `/requests`.
+
+### Notifications
+
+Notification rows are created entirely by Postgres triggers on
+`claims` (request -> notify owner, accept/decline -> notify claimer) -
+there's no client-side insert path (`notifications` has no INSERT policy;
+only the trigger functions, running SECURITY DEFINER, can write to it).
+The bell in the nav shows an unread count read on each page load; there's
+no realtime subscription, by design - clicking a notification marks it
+read and navigates to the linked claim/listing in one step.
