@@ -65,6 +65,14 @@ export interface ClaimWithClaimer extends Claim {
   claimer: Pick<User, "display_name" | "avatar_url">;
 }
 
+export interface ClaimWithParticipants extends Claim {
+  listing: Pick<
+    PublicListing,
+    "id" | "title" | "photo_url" | "owner_id" | "pickup_window_start" | "pickup_window_end"
+  > & { owner: Pick<User, "display_name" | "avatar_url"> };
+  claimer: Pick<User, "display_name" | "avatar_url">;
+}
+
 export interface Notification {
   id: string;
   user_id: string;

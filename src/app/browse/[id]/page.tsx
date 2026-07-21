@@ -137,10 +137,20 @@ export default async function ListingDetailPage({
           Log in to request this listing
         </Link>
       ) : myClaim ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Your request:{" "}
-          <span className="font-medium text-zinc-900 dark:text-zinc-100">{myClaim.status}</span>
-        </p>
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            Your request:{" "}
+            <span className="font-medium text-zinc-900 dark:text-zinc-100">{myClaim.status}</span>
+          </p>
+          {myClaim.status === "accepted" && (
+            <Link
+              href={`/claims/${myClaim.id}`}
+              className="self-start rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+            >
+              Open chat
+            </Link>
+          )}
+        </div>
       ) : listing.status === "active" ? (
         <form action={requestClaimAction}>
           <input type="hidden" name="listing_id" value={listing.id} />

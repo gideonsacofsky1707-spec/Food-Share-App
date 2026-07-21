@@ -60,6 +60,10 @@ Run each migration once, in order, in your project's Supabase SQL editor
   notification when a listing is requested (owner notified) and when a
   request is accepted or declined (claimer notified). Required before the
   notification bell in the nav will show anything.
+- [`0009_messages.sql`](./supabase/migrations/0009_messages.sql) —
+  `messages` table + RLS scoped to accepted-claim participants, and a
+  trigger that notifies whichever participant didn't send a given
+  message. Required before the chat on `/claims/[id]` will work.
 
 ## Project structure
 
@@ -71,7 +75,8 @@ src/
   app/listings/[id]/requests/ # owner's incoming requests for one listing
   app/browse/             # public listing browse + detail pages (+ "Request" action)
   app/requests/           # claimer's "my requests" page
-  app/claims/actions.ts   # server actions: request, accept, decline
+  app/claims/actions.ts   # server actions: request, accept, decline, send message
+  app/claims/[id]/         # chat thread for one accepted claim
   app/notifications/      # notifications page + "mark read" action
   components/             # shared UI components
   components/listings/    # listing form + Places Autocomplete address field
@@ -110,3 +115,17 @@ only the trigger functions, running SECURITY DEFINER, can write to it).
 The bell in the nav shows an unread count read on each page load; there's
 no realtime subscription, by design - clicking a notification marks it
 read and navigates to the linked claim/listing in one step.
+
+### Chat
+
+`/claims/[id]` is a simple thread tied to one accepted claim - reachable
+from wherever the pickup address is shown (`/requests`, the listing
+owner's `/listings/[id]/requests`, and `/browse/[id]` for the claimer).
+Access is gated the same way as location privacy: a
+`user_is_accepted_claim_participant()` SECURITY DEFINER function (same
+escape hatch as `user_owns_listing`/`user_has_claim_on_listing`) backs
+both the SELECT and INSERT policies on `messages`, so only the claimer or
+the listing's owner can read or post in a given claim's thread, and only
+once it's `accepted`. Messages are read on page load - no realtime
+subscription, per the ask - and sending one triggers a notification to
+whichever participant didn't send it.
