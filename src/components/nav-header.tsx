@@ -56,29 +56,37 @@ export async function NavHeader() {
           🍲 FoodShare
         </Link>
 
-        <nav className="hidden items-center gap-4 text-sm sm:flex">
-          {links}
+        <div className="flex items-center gap-3">
+          {/* Rendered exactly once, regardless of viewport - it sits next to
+              whichever of the two nav variants below is CSS-visible, rather
+              than living inside either one. Both variants stay mounted at
+              all times (Tailwind's hidden/sm:hidden only toggles display),
+              so putting NotificationBell inside both would mount two
+              instances that fight over the same realtime channel topic. */}
           {user && <NotificationBell userId={user.id} initialUnreadCount={unreadCount} />}
-          {!user && (
-            <Link
-              href="/signup"
-              className="rounded-full bg-zinc-900 px-4 py-1.5 font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
-            >
-              Sign up
-            </Link>
-          )}
-        </nav>
 
-        <div className="flex items-center gap-2 sm:hidden">
-          {user && <NotificationBell userId={user.id} initialUnreadCount={unreadCount} />}
-          <MobileNavToggle>
+          <nav className="hidden items-center gap-4 text-sm sm:flex">
             {links}
             {!user && (
-              <Link href="/signup" className="font-medium">
+              <Link
+                href="/signup"
+                className="rounded-full bg-zinc-900 px-4 py-1.5 font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+              >
                 Sign up
               </Link>
             )}
-          </MobileNavToggle>
+          </nav>
+
+          <div className="sm:hidden">
+            <MobileNavToggle>
+              {links}
+              {!user && (
+                <Link href="/signup" className="font-medium">
+                  Sign up
+                </Link>
+              )}
+            </MobileNavToggle>
+          </div>
         </div>
       </div>
     </header>
