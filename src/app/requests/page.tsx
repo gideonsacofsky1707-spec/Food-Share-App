@@ -110,10 +110,12 @@ export default async function MyRequestsPage() {
                         </dd>
                       </div>
                     </dl>
-                    <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
-                      In-app messaging isn&apos;t available yet - coordinate pickup using the
-                      details above for now.
-                    </p>
+                    <Link
+                      href={`/claims/${claim.id}`}
+                      className="mt-2 inline-block text-sm font-medium underline"
+                    >
+                      Open chat
+                    </Link>
                   </div>
                 )}
               </li>
