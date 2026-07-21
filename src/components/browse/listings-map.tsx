@@ -6,9 +6,44 @@ import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import { GoogleMapsScript, GOOGLE_MAPS_LOADED_EVENT } from "@/components/google-maps-script";
 import type { MapPin } from "@/types/database";
 
-// Center of the contiguous US - only used as a fallback when there are no
-// pins to center on.
+// Absolute last resort: center of the contiguous US, only used when we have
+// neither a device location nor any pins to average - i.e. an empty map with
+// no signal at all for where the viewer might be.
 const DEFAULT_CENTER = { lat: 39.8283, lng: -98.5795 };
+const DEFAULT_ZOOM = 4;
+// Close enough to see nearby listings around the viewer without them having
+// to zoom in manually.
+const DEVICE_LOCATION_ZOOM = 13;
+const PINS_AVERAGE_ZOOM = 12;
+// Caps how long we wait on a location fix (or the permission prompt) before
+// falling back, so a slow GPS or an ignored prompt can't stall the map.
+const GEOLOCATION_TIMEOUT_MS = 5000;
+
+function averagePinCenter(pins: MapPin[]) {
+  if (pins.length === 0) return null;
+  const total = pins.reduce(
+    (acc, pin) => ({ lat: acc.lat + pin.approx_lat, lng: acc.lng + pin.approx_lng }),
+    { lat: 0, lng: 0 },
+  );
+  return { lat: total.lat / pins.length, lng: total.lng / pins.length };
+}
+
+// Resolves to null (rather than rejecting) on denial/timeout/unsupported
+// browsers, so callers can treat "no device location" as one plain case to
+// fall back from instead of a try/catch.
+function getDeviceLocation(): Promise<{ lat: number; lng: number } | null> {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve(null);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => resolve({ lat: position.coords.latitude, lng: position.coords.longitude }),
+      () => resolve(null),
+      { timeout: GEOLOCATION_TIMEOUT_MS },
+    );
+  });
+}
 
 export function ListingsMap({ pins }: { pins: MapPin[] }) {
   const mapDivRef = useRef<HTMLDivElement>(null);
@@ -18,14 +53,25 @@ export function ListingsMap({ pins }: { pins: MapPin[] }) {
     let map: google.maps.Map | undefined;
     let markers: google.maps.Marker[] = [];
     let clusterer: MarkerClusterer | undefined;
+    let cancelled = false;
+    let initStarted = false;
 
-    function init() {
-      if (!mapDivRef.current || !window.google?.maps || map) return;
+    async function init() {
+      if (!mapDivRef.current || !window.google?.maps || map || initStarted) return;
+      initStarted = true;
 
-      map = new google.maps.Map(mapDivRef.current, {
-        center: pins[0] ? { lat: pins[0].approx_lat, lng: pins[0].approx_lng } : DEFAULT_CENTER,
-        zoom: pins.length > 0 ? 12 : 4,
-      });
+      const deviceLocation = await getDeviceLocation();
+      if (cancelled || !mapDivRef.current) return;
+
+      const pinsCenter = averagePinCenter(pins);
+      const center = deviceLocation ?? pinsCenter ?? DEFAULT_CENTER;
+      const zoom = deviceLocation
+        ? DEVICE_LOCATION_ZOOM
+        : pinsCenter
+          ? PINS_AVERAGE_ZOOM
+          : DEFAULT_ZOOM;
+
+      map = new google.maps.Map(mapDivRef.current, { center, zoom });
 
       markers = pins.map((pin) => {
         const marker = new google.maps.Marker({
@@ -48,6 +94,7 @@ export function ListingsMap({ pins }: { pins: MapPin[] }) {
     init();
     window.addEventListener(GOOGLE_MAPS_LOADED_EVENT, init);
     return () => {
+      cancelled = true;
       window.removeEventListener(GOOGLE_MAPS_LOADED_EVENT, init);
       clusterer?.clearMarkers();
       markers.forEach((marker) => marker.setMap(null));

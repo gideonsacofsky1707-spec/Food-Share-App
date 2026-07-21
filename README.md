@@ -162,6 +162,17 @@ a pin per active listing using the Google Maps JS API, clustering nearby
 pins via `@googlemaps/markerclusterer`; clicking an individual pin shows
 a preview card (photo, title, quantity) linking to `/browse/[id]`.
 
+On mount, `ListingsMap` tries `navigator.geolocation.getCurrentPosition()`
+(5s timeout) to center on the viewer's device location at a
+neighborhood-level zoom; if that's denied, times out, or the browser
+doesn't support it, it falls back to the average of the currently-shown
+pins' coordinates, and only falls back further to a hardcoded
+center-of-the-US at a country-wide zoom if there are no pins either. This
+resolves before the map is constructed, so the initial view is never the
+old flash-of-the-whole-country default. (If there are 2+ pins, `fitBounds`
+still runs afterward as before, zooming to fit every currently-shown pin -
+unrelated to and unaffected by this.)
+
 Pins use **rounded** coordinates (~111m, `round(lat/lng, 3)`), not the
 real ones - PROJECT.md is explicit that map view should show
 "approximate pins (exact address hidden until claimed)", and raw lat/lng
