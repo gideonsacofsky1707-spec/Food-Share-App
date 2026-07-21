@@ -1,4 +1,5 @@
-import type { Listing } from "@/types/database";
+import { AddressAutocomplete } from "@/components/listings/address-autocomplete";
+import type { PublicListing } from "@/types/database";
 
 function toDateTimeLocal(value: string | null) {
   if (!value) return "";
@@ -8,11 +9,13 @@ function toDateTimeLocal(value: string | null) {
 export function ListingForm({
   action,
   listing,
+  defaultAddress,
   error,
   submitLabel,
 }: {
   action: (formData: FormData) => void | Promise<void>;
-  listing?: Listing;
+  listing?: PublicListing;
+  defaultAddress?: string;
   error?: string;
   submitLabel: string;
 }) {
@@ -67,6 +70,15 @@ export function ListingForm({
           defaultValue={listing?.quantity}
           className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
         />
+      </label>
+
+      <label className="flex flex-col gap-1 text-sm">
+        Pickup address
+        <AddressAutocomplete defaultValue={defaultAddress} />
+        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+          Only a neighborhood-level area is shown publicly. The full address is only
+          shared with you and, later, a claimer you&apos;ve accepted.
+        </span>
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
