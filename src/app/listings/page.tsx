@@ -3,15 +3,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { deleteListingAction } from "@/app/listings/actions";
 import { DeleteListingForm } from "@/components/listings/delete-listing-button";
+import { formatDateTime } from "@/lib/format";
 import type { Listing } from "@/types/database";
-
-function formatDateTime(value: string | null) {
-  if (!value) return null;
-  return new Date(value).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
 
 export default async function ListingsPage({
   searchParams,
