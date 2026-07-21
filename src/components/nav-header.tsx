@@ -14,6 +14,9 @@ export async function NavHeader() {
           🍲 FoodShare
         </Link>
         <nav className="flex items-center gap-4 text-sm">
+          <Link href="/browse" className="font-medium">
+            Browse
+          </Link>
           {user ? (
             <>
               <Link href="/listings" className="font-medium">

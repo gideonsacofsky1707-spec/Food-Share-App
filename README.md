@@ -30,6 +30,9 @@ Run each migration once, in order, in your project's Supabase SQL editor
 - [`0002_listings.sql`](./supabase/migrations/0002_listings.sql) — `listings`
   table and a `listing-photos` storage bucket. Required before creating
   listings.
+- [`0003_public_active_listings.sql`](./supabase/migrations/0003_public_active_listings.sql) —
+  lets anyone (not just the owner) read `active` listings. Required
+  before `/browse` will show anything.
 
 ## Project structure
 
@@ -37,9 +40,11 @@ Run each migration once, in order, in your project's Supabase SQL editor
 src/
   app/                 # routes (App Router)
   app/auth/actions.ts  # server actions: sign up, log in, log out, profile updates
-  app/listings/        # listing CRUD pages + server actions
+  app/listings/        # listing CRUD pages + server actions (owner-only)
+  app/browse/          # public listing browse + detail pages
   components/          # shared UI components
   lib/supabase/        # Supabase client (browser + server + middleware)
+  lib/format.ts        # shared display formatting (e.g. dates)
   types/               # shared TypeScript types, incl. database.ts (schema types)
 supabase/migrations/    # SQL to run against your Supabase project
 ```
