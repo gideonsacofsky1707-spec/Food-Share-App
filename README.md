@@ -82,6 +82,14 @@ Run each migration once, in order, in your project's Supabase SQL editor
   `get_active_listing_map_pins()`, a public `SECURITY DEFINER` function
   returning *rounded* coordinates (~111m) for every active listing.
   Required before `/browse`'s map view will show any pins.
+- [`0014_ratings.sql`](./supabase/migrations/0014_ratings.sql) — `ratings`
+  table + RLS, `mark_claim_collected()` (either party flips an accepted
+  claim to `completed` and the listing to `collected`), and a trigger that
+  keeps `users.rating_avg`/`rating_count` in sync. Also widens
+  `user_is_accepted_claim_participant()` and
+  `get_listing_private_location()` to cover `completed` claims, not just
+  `accepted` ones. Required before "Mark as collected" on `/claims/[id]`
+  or rating counts on `/profile` will work.
 
 ## Project structure
 
@@ -200,7 +208,9 @@ Access is gated the same way as location privacy: a
 escape hatch as `user_owns_listing`/`user_has_claim_on_listing`) backs
 both the SELECT and INSERT policies on `messages`, so only the claimer or
 the listing's owner can read or post in a given claim's thread, and only
-once it's `accepted`. The message list (`ChatThread`, a client component)
+once it's `accepted` or `completed` (widened from just `accepted` by
+0014_ratings.sql, so the thread doesn't disappear the moment either party
+marks it collected). The message list (`ChatThread`, a client component)
 subscribes to `postgres_changes` INSERT events scoped to
 `claim_id=eq.<this claim>` and appends new messages live; sending is still
 a plain server action + redirect, so no client-side send logic is needed.
@@ -241,3 +251,34 @@ where pubname = 'supabase_realtime';
 `0010_enable_realtime.sql` adds). If either is missing, that migration
 was never applied - Realtime otherwise never broadcasts changes for that
 table at all, no matter how correct the RLS or the client code is.
+
+### Ratings
+
+Either the listing owner or the claimer can mark an `accepted` claim
+collected from `/claims/[id]` (`MarkCollectedForm`, confirm-before-submit
+like `DeleteListingForm`) - `mark_claim_collected()` flips the claim to
+`completed` and the listing to `collected` together, and notifies
+whichever of the two didn't click it. Once `completed`, each participant
+who hasn't yet rated the other sees `RatingForm` (1-5 stars + optional
+comment) in place of it; whoever already has just sees their own score
+back. "Open chat" links on `/requests` and `/listings/[id]/requests`
+relabel to "Open chat & rate" once completed, so there's a durable way
+back to that prompt beyond the one-time notification.
+
+Rating access is gated by `claim_other_participant()`, a `SECURITY
+DEFINER` function that returns the *other* side of a claim only once it's
+`completed` - a rating's INSERT policy requires `ratee_id` to equal that
+function's result for the current claim and rater, which in one check
+enforces the claim is actually done, the rater was actually part of it,
+and the ratee is actually the other participant (not an arbitrary user).
+"Only one rating per person per claim" is a plain unique index on
+`(claim_id, rater_id)`, not an app-level check - a duplicate insert fails
+with a Postgres unique-violation (`23505`), which `submitRatingAction`
+turns into a plain error message the same way `requestClaimAction` does
+for double-claiming a listing.
+
+`users.rating_avg`/`rating_count` (shown on `/profile`) are maintained by
+a trigger on `ratings` that recomputes both from every row for that
+`ratee_id` after each insert - not incremented in place - so they can
+never drift out of sync with the underlying ratings even if a row were
+ever corrected or removed by hand later.
