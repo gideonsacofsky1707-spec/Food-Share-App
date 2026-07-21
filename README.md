@@ -141,6 +141,17 @@ scoped to `user_id=eq.<current user>`, incrementing live as new
 notifications arrive - no polling. Clicking a notification marks it read
 and navigates to the linked claim/listing in one step.
 
+### Mobile nav
+
+`NavHeader` builds its link list once and renders it twice: a `hidden
+sm:flex` row for wider screens, and inside `MobileNavToggle` (a client
+component, `src/components/mobile-nav-toggle.tsx`) for narrow ones - a
+hamburger button that reveals the same links stacked in a dropdown,
+closing itself on either another click or a link tap. `NotificationBell`
+is rendered exactly once, outside both variants, so toggling between
+layouts at the `sm` breakpoint never opens a second realtime subscription
+for the same user.
+
 ### Map view
 
 `/browse` has a List/Map toggle (`BrowseViewToggle`, client-side state

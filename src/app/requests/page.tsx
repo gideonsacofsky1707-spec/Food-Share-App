@@ -74,9 +74,9 @@ export default async function MyRequestsPage() {
                     </div>
                   )}
 
-                  <div className="flex flex-1 flex-col gap-1">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <div className="flex items-center justify-between gap-2">
-                      <h2 className="font-semibold">{claim.listing.title}</h2>
+                      <h2 className="min-w-0 break-words font-semibold">{claim.listing.title}</h2>
                       <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                         {claim.status}
                       </span>
