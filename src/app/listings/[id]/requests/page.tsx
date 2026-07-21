@@ -73,26 +73,28 @@ export default async function ListingRequestsPage({
           {claims.map((claim) => (
             <li
               key={claim.id}
-              className="flex items-center gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
+              className="flex flex-col gap-4 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800 sm:flex-row sm:items-center"
             >
-              {claim.claimer.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={claim.claimer.avatar_url}
-                  alt={claim.claimer.display_name}
-                  className="h-12 w-12 shrink-0 rounded-full object-cover"
-                />
-              ) : (
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xl dark:bg-zinc-800">
-                  🍲
-                </div>
-              )}
+              <div className="flex min-w-0 flex-1 gap-4">
+                {claim.claimer.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={claim.claimer.avatar_url}
+                    alt={claim.claimer.display_name}
+                    className="h-12 w-12 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-xl dark:bg-zinc-800">
+                    🍲
+                  </div>
+                )}
 
-              <div className="flex flex-1 flex-col gap-1">
-                <span className="font-semibold">{claim.claimer.display_name}</span>
-                <span className="text-xs text-zinc-500 dark:text-zinc-500">
-                  Requested {formatDateTime(claim.created_at)}
-                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
+                  <span className="break-words font-semibold">{claim.claimer.display_name}</span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-500">
+                    Requested {formatDateTime(claim.created_at)}
+                  </span>
+                </div>
               </div>
 
               {claim.status === "requested" ? (
@@ -102,7 +104,7 @@ export default async function ListingRequestsPage({
                     <input type="hidden" name="listing_id" value={id} />
                     <button
                       type="submit"
-                      className="rounded-full bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+                      className="rounded-full bg-zinc-900 px-3 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
                     >
                       Accept
                     </button>
@@ -112,7 +114,7 @@ export default async function ListingRequestsPage({
                     <input type="hidden" name="listing_id" value={id} />
                     <button
                       type="submit"
-                      className="rounded-full border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700"
+                      className="rounded-full border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
                     >
                       Decline
                     </button>

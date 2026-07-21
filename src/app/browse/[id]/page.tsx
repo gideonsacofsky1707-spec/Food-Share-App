@@ -73,7 +73,9 @@ export default async function ListingDetailPage({
       )}
 
       <div className="flex items-start justify-between gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">{listing.title}</h1>
+        <h1 className="min-w-0 text-2xl font-semibold tracking-tight break-words">
+          {listing.title}
+        </h1>
         <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
           {listing.status}
         </span>

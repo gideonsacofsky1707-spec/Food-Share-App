@@ -100,7 +100,7 @@ export function ChatThread({
         return (
           <li
             key={message.id}
-            className={`flex flex-col gap-0.5 rounded-xl px-3 py-2 text-sm ${
+            className={`flex max-w-[85%] flex-col gap-0.5 break-words rounded-xl px-3 py-2 text-sm ${
               isMine
                 ? "self-end bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
                 : "self-start bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100"

@@ -59,7 +59,7 @@ export function ListingsMap({ pins }: { pins: MapPin[] }) {
       <GoogleMapsScript />
       <div
         ref={mapDivRef}
-        className="h-[500px] w-full rounded-xl border border-zinc-200 dark:border-zinc-800"
+        className="h-[60vh] max-h-[500px] min-h-[300px] w-full rounded-xl border border-zinc-200 dark:border-zinc-800"
       />
 
       {pins.length === 0 && (
