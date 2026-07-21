@@ -68,6 +68,10 @@ Run each migration once, in order, in your project's Supabase SQL editor
   adds `messages` and `notifications` to the `supabase_realtime`
   publication (idempotently). Required before the chat thread and the nav
   bell update live instead of only on page load.
+- [`0011_realtime_function_grants.sql`](./supabase/migrations/0011_realtime_function_grants.sql) —
+  broadens `user_is_accepted_claim_participant`'s EXECUTE grant to
+  `anon`. A debugging hardening step, not expected to change behavior on
+  its own - see "Debugging a stalled subscription" below.
 
 ## Project structure
 
@@ -152,3 +156,27 @@ If a subscription ever seems to "not receive" an update, the fix is almost
 always that the row genuinely isn't visible to that user under RLS (check
 with the same query a normal page load would run) - not to loosen the
 policy, which would leak other users' rows to every subscriber instead.
+
+#### Debugging a stalled subscription
+
+`ChatThread` and `NotificationBell` both log their subscription status
+(`console.log("[chat-thread] subscription status:", ...)` /
+`[notification-bell] ...`) - open the browser console and look for
+`SUBSCRIBED` after the page loads. Anything else (`CHANNEL_ERROR`,
+`TIMED_OUT`) means the channel never actually attached, and the logged
+`err` usually says why. These are marked `// TEMP debug logging` and
+should come back out once live delivery is confirmed working end to end.
+
+If the status never even logs, or logs `CHANNEL_ERROR` with no useful
+detail, check from the database side - run in the SQL editor:
+
+```sql
+select schemaname, tablename
+from pg_publication_tables
+where pubname = 'supabase_realtime';
+```
+
+`messages` and `notifications` should both be listed (that's what
+`0010_enable_realtime.sql` adds). If either is missing, that migration
+was never applied - Realtime otherwise never broadcasts changes for that
+table at all, no matter how correct the RLS or the client code is.

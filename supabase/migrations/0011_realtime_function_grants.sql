@@ -1,0 +1,13 @@
+-- Debugging aid for "chat messages aren't appearing live": broaden the
+-- EXECUTE grant on the function backing messages' RLS policies to `anon`
+-- as well as `authenticated`.
+--
+-- This almost certainly isn't the root cause on its own - anon has no
+-- auth.uid() to match, so the function still correctly returns false for
+-- an anonymous caller - but a missing EXECUTE grant is exactly the kind of
+-- thing that can make a policy evaluation fail in a context that doesn't
+-- exactly mirror a normal authenticated PostgREST request, and Realtime's
+-- postgres_changes evaluation is one such context. Cheap to close off
+-- while debugging; doesn't change who can actually read/write anything
+-- (auth.uid() = null for anon still blocks it downstream).
+grant execute on function public.user_is_accepted_claim_participant(uuid, uuid) to anon;
