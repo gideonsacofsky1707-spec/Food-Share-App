@@ -65,6 +65,15 @@ export interface ClaimWithClaimer extends Claim {
   claimer: Pick<User, "display_name" | "avatar_url">;
 }
 
+export interface Notification {
+  id: string;
+  user_id: string;
+  message: string;
+  link: string;
+  read: boolean;
+  created_at: string;
+}
+
 export interface Message {
   id: string;
   claim_id: string;
