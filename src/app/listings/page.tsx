@@ -100,6 +100,9 @@ export default async function ListingsPage({
                   <Link href={`/listings/${listing.id}/edit`} className="text-sm underline">
                     Edit
                   </Link>
+                  <Link href={`/listings/${listing.id}/requests`} className="text-sm underline">
+                    Requests
+                  </Link>
                   <DeleteListingForm id={listing.id} action={deleteListingAction} />
                 </div>
               </div>

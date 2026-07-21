@@ -42,6 +42,11 @@ Run each migration once, in order, in your project's Supabase SQL editor
   owner (via a SECURITY DEFINER function), so browsing the public feed
   never leaks a precise pin or street address. Required before creating or
   viewing listings with the address field.
+- [`0005_claims.sql`](./supabase/migrations/0005_claims.sql) — `claims`
+  table, RLS, and the `accept_claim` function that also flips the listing
+  to `claimed` and declines competing requests. Extends
+  `get_listing_private_location` to also allow an accepted claimer.
+  Required before requesting a listing.
 
 ## Project structure
 
@@ -50,7 +55,10 @@ src/
   app/                    # routes (App Router)
   app/auth/actions.ts     # server actions: sign up, log in, log out, profile updates
   app/listings/           # listing CRUD pages + server actions (owner-only)
-  app/browse/             # public listing browse + detail pages
+  app/listings/[id]/requests/ # owner's incoming requests for one listing
+  app/browse/             # public listing browse + detail pages (+ "Request" action)
+  app/requests/           # claimer's "my requests" page
+  app/claims/actions.ts   # server actions: request, accept, decline
   components/             # shared UI components
   components/listings/    # listing form + Places Autocomplete address field
   lib/supabase/           # Supabase client (browser + server + middleware)
@@ -67,6 +75,14 @@ supabase/migrations/       # SQL to run against your Supabase project
 and shown on `/browse`. The real coordinates and full street address are
 not selectable by anon/authenticated roles at all - reading them requires
 calling the `get_listing_private_location` Postgres function, which only
-returns a row for the listing's owner. Milestone 5 (claims) will extend
-that function to also allow an accepted claimer; see the `TODO` in
-`0004_listing_location_privacy.sql`.
+returns a row for the listing's owner or (as of 0005_claims.sql) a claimer
+whose request has been accepted.
+
+### Claim flow
+
+A signed-in, non-owner visitor can request an active listing from
+`/browse/[id]`. The owner sees incoming requests at
+`/listings/[id]/requests` and can accept or decline; accepting flips the
+listing to `claimed` and auto-declines any other pending requests on it
+(via the `accept_claim` Postgres function, so both writes are atomic).
+Claimers track their requests at `/requests`.

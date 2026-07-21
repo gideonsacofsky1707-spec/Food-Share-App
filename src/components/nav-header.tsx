@@ -22,6 +22,9 @@ export async function NavHeader() {
               <Link href="/listings" className="font-medium">
                 My listings
               </Link>
+              <Link href="/requests" className="font-medium">
+                My requests
+              </Link>
               <Link href="/profile" className="font-medium underline">
                 Profile
               </Link>

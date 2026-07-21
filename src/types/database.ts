@@ -54,6 +54,17 @@ export interface Claim {
   created_at: string;
 }
 
+export interface ClaimWithListing extends Claim {
+  listing: Pick<
+    PublicListing,
+    "id" | "title" | "photo_url" | "status" | "pickup_window_start" | "pickup_window_end"
+  >;
+}
+
+export interface ClaimWithClaimer extends Claim {
+  claimer: Pick<User, "display_name" | "avatar_url">;
+}
+
 export interface Message {
   id: string;
   claim_id: string;
