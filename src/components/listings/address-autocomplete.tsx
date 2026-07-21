@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Script from "next/script";
+import { GoogleMapsScript, GOOGLE_MAPS_LOADED_EVENT } from "@/components/google-maps-script";
 
 // Places Autocomplete is UX only, to help the user pick a real address
 // quickly - whatever ends up in this input gets re-geocoded server-side
@@ -20,20 +20,13 @@ export function AddressAutocomplete({ defaultValue }: { defaultValue?: string })
     }
 
     init();
-    window.addEventListener("google-maps-places-loaded", init);
-    return () => window.removeEventListener("google-maps-places-loaded", init);
+    window.addEventListener(GOOGLE_MAPS_LOADED_EVENT, init);
+    return () => window.removeEventListener(GOOGLE_MAPS_LOADED_EVENT, init);
   }, []);
 
   return (
     <>
-      <Script
-        id="google-maps-places"
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
-        strategy="afterInteractive"
-        onReady={() => {
-          window.dispatchEvent(new Event("google-maps-places-loaded"));
-        }}
-      />
+      <GoogleMapsScript />
       <input
         ref={inputRef}
         type="text"
