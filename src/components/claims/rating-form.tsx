@@ -1,5 +1,10 @@
-import { submitRatingAction } from "@/app/claims/actions";
+"use client";
+
+import { useActionState } from "react";
+import { submitRatingAction, type RatingFormState } from "@/app/claims/actions";
 import { SubmitButton } from "@/components/submit-button";
+
+const initialState: RatingFormState = {};
 
 export function RatingForm({
   claimId,
@@ -10,15 +15,27 @@ export function RatingForm({
   rateeId: string;
   rateeName: string;
 }) {
+  const [state, dispatch, isPending] = useActionState(submitRatingAction, initialState);
+  const fieldErrors = state.fieldErrors ?? {};
+
   return (
     <form
-      action={submitRatingAction}
+      onSubmit={(event) => {
+        event.preventDefault();
+        dispatch(new FormData(event.currentTarget));
+      }}
       className="flex flex-col gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
     >
       <input type="hidden" name="claim_id" value={claimId} />
       <input type="hidden" name="ratee_id" value={rateeId} />
 
       <p className="text-sm font-medium">Rate {rateeName}</p>
+
+      {state.error && (
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+          {state.error}
+        </p>
+      )}
 
       <fieldset className="flex gap-4">
         <legend className="sr-only">Star rating, 1 to 5</legend>
@@ -32,6 +49,9 @@ export function RatingForm({
           </label>
         ))}
       </fieldset>
+      {fieldErrors.score && (
+        <span className="text-xs text-red-600 dark:text-red-400">{fieldErrors.score}</span>
+      )}
 
       <label className="flex flex-col gap-1 text-sm">
         Comment (optional)
@@ -44,6 +64,7 @@ export function RatingForm({
       </label>
 
       <SubmitButton
+        pending={isPending}
         pendingLabel="Submitting…"
         className="self-start rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
       >

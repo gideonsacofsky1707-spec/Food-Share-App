@@ -1,19 +1,17 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import {
-  signOutAction,
-  updateProfileAction,
-  uploadAvatarAction,
-} from "@/app/auth/actions";
-import type { User } from "@/types/database";
+import { signOutAction } from "@/app/auth/actions";
 import { SubmitButton } from "@/components/submit-button";
+import { UpdateProfileForm } from "@/components/profile/update-profile-form";
+import { UploadAvatarForm } from "@/components/profile/upload-avatar-form";
+import type { User } from "@/types/database";
 
 export default async function ProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; success?: string }>;
+  searchParams: Promise<{ success?: string }>;
 }) {
-  const { error, success } = await searchParams;
+  const { success } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -41,11 +39,6 @@ export default async function ProfilePage({
         </form>
       </div>
 
-      {error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </p>
-      )}
       {success && (
         <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700 dark:bg-green-950 dark:text-green-300">
           {success}
@@ -70,44 +63,10 @@ export default async function ProfilePage({
             ? `★ ${profile.rating_avg.toFixed(1)} (${profile.rating_count} rating${profile.rating_count === 1 ? "" : "s"})`
             : "No ratings yet"}
         </p>
-        <form action={uploadAvatarAction} className="flex flex-col items-center gap-2">
-          <input type="file" name="avatar" accept="image/*" required />
-          <SubmitButton
-            pendingLabel="Uploading…"
-            className="rounded-full border border-zinc-300 px-4 py-1.5 text-sm dark:border-zinc-700"
-          >
-            Upload avatar
-          </SubmitButton>
-        </form>
+        <UploadAvatarForm />
       </section>
 
-      <form action={updateProfileAction} className="flex flex-col gap-4">
-        <label className="flex flex-col gap-1 text-sm">
-          Display name
-          <input
-            type="text"
-            name="display_name"
-            required
-            defaultValue={profile?.display_name ?? ""}
-            className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
-          />
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Email
-          <input
-            type="email"
-            value={user.email ?? ""}
-            disabled
-            className="rounded-md border border-zinc-300 bg-zinc-100 px-3 py-2 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800"
-          />
-        </label>
-        <SubmitButton
-          pendingLabel="Saving…"
-          className="rounded-full bg-zinc-900 px-5 py-2 font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
-        >
-          Save
-        </SubmitButton>
-      </form>
+      <UpdateProfileForm displayName={profile?.display_name ?? ""} email={user.email ?? ""} />
     </main>
   );
 }
