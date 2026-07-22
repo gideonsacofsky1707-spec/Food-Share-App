@@ -86,7 +86,7 @@ export default async function ListingsPage({
                     {listing.status}
                   </span>
                 </div>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">{listing.quantity}</p>
+                <p className="break-words text-sm text-zinc-600 dark:text-zinc-400">{listing.quantity}</p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-500">
                   Pickup: {formatDateTime(listing.pickup_window_start)} –{" "}
                   {formatDateTime(listing.pickup_window_end)}

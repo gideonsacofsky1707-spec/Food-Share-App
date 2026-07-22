@@ -93,12 +93,12 @@ export default async function ListingDetailPage({
         </p>
       )}
 
-      <p className="text-zinc-700 dark:text-zinc-300">{listing.description}</p>
+      <p className="break-words text-zinc-700 dark:text-zinc-300">{listing.description}</p>
 
       <dl className="flex flex-col gap-2 text-sm">
         <div className="flex gap-2">
-          <dt className="font-medium text-zinc-500 dark:text-zinc-400">Quantity</dt>
-          <dd>{listing.quantity}</dd>
+          <dt className="shrink-0 font-medium text-zinc-500 dark:text-zinc-400">Quantity</dt>
+          <dd className="min-w-0 break-words">{listing.quantity}</dd>
         </div>
         <div className="flex gap-2">
           <dt className="font-medium text-zinc-500 dark:text-zinc-400">Pickup window</dt>
@@ -115,14 +115,14 @@ export default async function ListingDetailPage({
         )}
         {privateLocation?.exact_address ? (
           <div className="flex gap-2">
-            <dt className="font-medium text-zinc-500 dark:text-zinc-400">Pickup address</dt>
-            <dd>{privateLocation.exact_address}</dd>
+            <dt className="shrink-0 font-medium text-zinc-500 dark:text-zinc-400">Pickup address</dt>
+            <dd className="min-w-0 break-words">{privateLocation.exact_address}</dd>
           </div>
         ) : (
           listing.approx_location_label && (
             <div className="flex gap-2">
-              <dt className="font-medium text-zinc-500 dark:text-zinc-400">General area</dt>
-              <dd>{listing.approx_location_label}</dd>
+              <dt className="shrink-0 font-medium text-zinc-500 dark:text-zinc-400">General area</dt>
+              <dd className="min-w-0 break-words">{listing.approx_location_label}</dd>
             </div>
           )
         )}

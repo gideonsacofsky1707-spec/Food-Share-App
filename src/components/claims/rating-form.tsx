@@ -29,7 +29,7 @@ export function RatingForm({
       <input type="hidden" name="claim_id" value={claimId} />
       <input type="hidden" name="ratee_id" value={rateeId} />
 
-      <p className="text-sm font-medium">Rate {rateeName}</p>
+      <p className="break-words text-sm font-medium">Rate {rateeName}</p>
 
       {state.error && (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">

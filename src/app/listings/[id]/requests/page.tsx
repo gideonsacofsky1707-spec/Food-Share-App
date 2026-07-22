@@ -50,7 +50,7 @@ export default async function ListingRequestsPage({
       </div>
 
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Requests for {listing.title}</h1>
+        <h1 className="break-words text-2xl font-semibold tracking-tight">Requests for {listing.title}</h1>
         <span className="mt-1 inline-block rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
           Listing status: {listing.status}
         </span>

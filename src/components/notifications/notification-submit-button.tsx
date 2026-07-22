@@ -23,7 +23,7 @@ export function NotificationSubmitButton({
           : "border-zinc-900 bg-zinc-50 dark:border-zinc-50 dark:bg-zinc-900"
       }`}
     >
-      <span className="flex flex-col items-start gap-1">{children}</span>
+      <span className="flex min-w-0 flex-col items-start gap-1">{children}</span>
       {pending && <Spinner className="h-4 w-4 shrink-0 text-zinc-500" />}
     </button>
   );

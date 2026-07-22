@@ -35,7 +35,7 @@ export default async function NotificationsPage() {
                 <input type="hidden" name="notification_id" value={notification.id} />
                 <input type="hidden" name="redirect_to" value={notification.link} />
                 <NotificationSubmitButton read={notification.read}>
-                  <span className="text-sm font-medium">{notification.message}</span>
+                  <span className="min-w-0 break-words text-sm font-medium">{notification.message}</span>
                   <span className="text-xs text-zinc-500 dark:text-zinc-500">
                     {formatDateTime(notification.created_at)}
                   </span>

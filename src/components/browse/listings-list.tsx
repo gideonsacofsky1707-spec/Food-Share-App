@@ -36,9 +36,9 @@ export function ListingsList({ listings }: { listings: PublicListing[] }) {
               </div>
             )}
 
-            <div className="flex flex-1 flex-col gap-1">
-              <h2 className="font-semibold">{listing.title}</h2>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">{listing.quantity}</p>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <h2 className="min-w-0 break-words font-semibold">{listing.title}</h2>
+              <p className="break-words text-sm text-zinc-600 dark:text-zinc-400">{listing.quantity}</p>
               <p className="text-xs text-zinc-500 dark:text-zinc-500">
                 Pickup: {formatDateTime(listing.pickup_window_start)} –{" "}
                 {formatDateTime(listing.pickup_window_end)}

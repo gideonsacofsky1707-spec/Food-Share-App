@@ -24,3 +24,15 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* iOS Safari auto-zooms the page on focusing any text input/textarea/select
+   rendering below 16px - and doesn't reliably zoom back out afterward. This
+   is unlayered (outside @layer), so per Tailwind v4's cascade rules it wins
+   over every Tailwind utility class - including a `text-sm`/`text-xs`
+   inherited from a wrapping label, or applied directly to a control - without
+   having to audit every form for it individually. */
+input,
+textarea,
+select {
+  font-size: 16px;
+}
