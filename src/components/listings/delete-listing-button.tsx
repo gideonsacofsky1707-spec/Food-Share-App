@@ -1,5 +1,7 @@
 "use client";
 
+import { SubmitButton } from "@/components/submit-button";
+
 export function DeleteListingForm({
   id,
   action,
@@ -17,9 +19,9 @@ export function DeleteListingForm({
       }}
     >
       <input type="hidden" name="id" value={id} />
-      <button type="submit" className="text-sm text-red-600 underline dark:text-red-400">
+      <SubmitButton pendingLabel="Deleting…" className="text-sm text-red-600 underline dark:text-red-400">
         Delete
-      </button>
+      </SubmitButton>
     </form>
   );
 }

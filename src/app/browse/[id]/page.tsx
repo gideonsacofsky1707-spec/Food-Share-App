@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requestClaimAction } from "@/app/claims/actions";
+import { SubmitButton } from "@/components/submit-button";
 import { formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
 import type { Claim, ListingPrivateLocation, PublicListing } from "@/types/database";
@@ -156,12 +157,12 @@ export default async function ListingDetailPage({
       ) : listing.status === "active" ? (
         <form action={requestClaimAction}>
           <input type="hidden" name="listing_id" value={listing.id} />
-          <button
-            type="submit"
+          <SubmitButton
+            pendingLabel="Requesting…"
             className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
           >
             Request pickup
-          </button>
+          </SubmitButton>
         </form>
       ) : null}
     </main>

@@ -45,6 +45,7 @@ export default async function EditListingPage({
         defaultAddress={privateLocation?.exact_address ?? undefined}
         error={error}
         submitLabel="Save changes"
+        pendingLabel="Saving…"
       />
     </main>
   );

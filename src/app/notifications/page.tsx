@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { markNotificationReadAction } from "@/app/notifications/actions";
+import { NotificationSubmitButton } from "@/components/notifications/notification-submit-button";
 import { formatDateTime } from "@/lib/format";
 import type { Notification } from "@/types/database";
 
@@ -33,19 +34,12 @@ export default async function NotificationsPage() {
               <form action={markNotificationReadAction}>
                 <input type="hidden" name="notification_id" value={notification.id} />
                 <input type="hidden" name="redirect_to" value={notification.link} />
-                <button
-                  type="submit"
-                  className={`flex w-full flex-col items-start gap-1 rounded-xl border p-4 text-left transition-colors ${
-                    notification.read
-                      ? "border-zinc-200 dark:border-zinc-800"
-                      : "border-zinc-900 bg-zinc-50 dark:border-zinc-50 dark:bg-zinc-900"
-                  }`}
-                >
+                <NotificationSubmitButton read={notification.read}>
                   <span className="text-sm font-medium">{notification.message}</span>
                   <span className="text-xs text-zinc-500 dark:text-zinc-500">
                     {formatDateTime(notification.created_at)}
                   </span>
-                </button>
+                </NotificationSubmitButton>
               </form>
             </li>
           ))}

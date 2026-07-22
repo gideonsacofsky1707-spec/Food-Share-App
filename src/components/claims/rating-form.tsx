@@ -1,4 +1,5 @@
 import { submitRatingAction } from "@/app/claims/actions";
+import { SubmitButton } from "@/components/submit-button";
 
 export function RatingForm({
   claimId,
@@ -42,12 +43,12 @@ export function RatingForm({
         />
       </label>
 
-      <button
-        type="submit"
+      <SubmitButton
+        pendingLabel="Submitting…"
         className="self-start rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
       >
         Submit rating
-      </button>
+      </SubmitButton>
     </form>
   );
 }
