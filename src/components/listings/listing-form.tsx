@@ -1,4 +1,5 @@
 import { AddressAutocomplete } from "@/components/listings/address-autocomplete";
+import { SubmitButton } from "@/components/submit-button";
 import type { PublicListing } from "@/types/database";
 
 function toDateTimeLocal(value: string | null) {
@@ -12,12 +13,14 @@ export function ListingForm({
   defaultAddress,
   error,
   submitLabel,
+  pendingLabel = "Saving…",
 }: {
   action: (formData: FormData) => void | Promise<void>;
   listing?: PublicListing;
   defaultAddress?: string;
   error?: string;
   submitLabel: string;
+  pendingLabel?: string;
 }) {
   return (
     <form action={action} className="flex flex-col gap-4">
@@ -119,12 +122,12 @@ export function ListingForm({
         <input type="file" name="photo" accept="image/*" />
       </label>
 
-      <button
-        type="submit"
+      <SubmitButton
+        pendingLabel={pendingLabel}
         className="rounded-full bg-zinc-900 px-5 py-2 font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
       >
         {submitLabel}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

@@ -5,6 +5,7 @@ import { markCollectedAction, sendMessageAction } from "@/app/claims/actions";
 import { ChatThread } from "@/components/claims/chat-thread";
 import { MarkCollectedForm } from "@/components/claims/mark-collected-form";
 import { RatingForm } from "@/components/claims/rating-form";
+import { SubmitButton } from "@/components/submit-button";
 import { formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
 import type { ClaimWithParticipants, Message, Rating } from "@/types/database";
@@ -131,12 +132,12 @@ export default async function ClaimChatPage({
                 placeholder="Write a message…"
                 className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
               />
-              <button
-                type="submit"
+              <SubmitButton
+                pendingLabel="Sending…"
                 className="shrink-0 rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
               >
                 Send
-              </button>
+              </SubmitButton>
             </form>
           )}
 

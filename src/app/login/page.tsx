@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { loginAction } from "@/app/auth/actions";
+import { SubmitButton } from "@/components/submit-button";
 
 export default async function LoginPage({
   searchParams,
@@ -39,12 +40,12 @@ export default async function LoginPage({
             className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
           />
         </label>
-        <button
-          type="submit"
+        <SubmitButton
+          pendingLabel="Logging in…"
           className="rounded-full bg-zinc-900 px-5 py-2 font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
         >
           Log in
-        </button>
+        </SubmitButton>
       </form>
 
       <p className="text-sm text-zinc-600 dark:text-zinc-400">

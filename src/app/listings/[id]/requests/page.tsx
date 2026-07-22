@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { acceptClaimAction, declineClaimAction } from "@/app/claims/actions";
+import { SubmitButton } from "@/components/submit-button";
 import { formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
 import type { ClaimWithClaimer, PublicListing } from "@/types/database";
@@ -102,22 +103,22 @@ export default async function ListingRequestsPage({
                   <form action={acceptClaimAction}>
                     <input type="hidden" name="claim_id" value={claim.id} />
                     <input type="hidden" name="listing_id" value={id} />
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingLabel="Accepting…"
                       className="rounded-full bg-zinc-900 px-3 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
                     >
                       Accept
-                    </button>
+                    </SubmitButton>
                   </form>
                   <form action={declineClaimAction}>
                     <input type="hidden" name="claim_id" value={claim.id} />
                     <input type="hidden" name="listing_id" value={id} />
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingLabel="Declining…"
                       className="rounded-full border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
                     >
                       Decline
-                    </button>
+                    </SubmitButton>
                   </form>
                 </div>
               ) : claim.status === "accepted" || claim.status === "completed" ? (

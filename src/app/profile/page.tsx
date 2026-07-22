@@ -6,6 +6,7 @@ import {
   uploadAvatarAction,
 } from "@/app/auth/actions";
 import type { User } from "@/types/database";
+import { SubmitButton } from "@/components/submit-button";
 
 export default async function ProfilePage({
   searchParams,
@@ -34,9 +35,9 @@ export default async function ProfilePage({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold tracking-tight">Your profile</h1>
         <form action={signOutAction}>
-          <button type="submit" className="text-sm underline">
+          <SubmitButton pendingLabel="Logging out…" className="text-sm underline">
             Log out
-          </button>
+          </SubmitButton>
         </form>
       </div>
 
@@ -71,12 +72,12 @@ export default async function ProfilePage({
         </p>
         <form action={uploadAvatarAction} className="flex flex-col items-center gap-2">
           <input type="file" name="avatar" accept="image/*" required />
-          <button
-            type="submit"
+          <SubmitButton
+            pendingLabel="Uploading…"
             className="rounded-full border border-zinc-300 px-4 py-1.5 text-sm dark:border-zinc-700"
           >
             Upload avatar
-          </button>
+          </SubmitButton>
         </form>
       </section>
 
@@ -100,12 +101,12 @@ export default async function ProfilePage({
             className="rounded-md border border-zinc-300 bg-zinc-100 px-3 py-2 text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800"
           />
         </label>
-        <button
-          type="submit"
+        <SubmitButton
+          pendingLabel="Saving…"
           className="rounded-full bg-zinc-900 px-5 py-2 font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
         >
           Save
-        </button>
+        </SubmitButton>
       </form>
     </main>
   );
