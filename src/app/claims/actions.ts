@@ -101,7 +101,15 @@ export async function markCollectedAction(formData: FormData) {
   );
 }
 
-export async function submitRatingAction(formData: FormData) {
+export type RatingFormState = {
+  error?: string;
+  fieldErrors?: { score?: string };
+};
+
+export async function submitRatingAction(
+  _prevState: RatingFormState,
+  formData: FormData,
+): Promise<RatingFormState> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -115,7 +123,7 @@ export async function submitRatingAction(formData: FormData) {
   if (!claimId) redirect("/requests");
 
   if (!Number.isInteger(score) || score < 1 || score > 5) {
-    redirect(`/claims/${claimId}?error=${encodeURIComponent("Pick a star rating from 1 to 5.")}`);
+    return { fieldErrors: { score: "Pick a star rating from 1 to 5." } };
   }
 
   const { error } = await supabase.from("ratings").insert({
@@ -131,7 +139,7 @@ export async function submitRatingAction(formData: FormData) {
       error.code === "23505"
         ? "You've already rated this exchange."
         : "Could not submit that rating.";
-    redirect(`/claims/${claimId}?error=${encodeURIComponent(message)}`);
+    return { error: message };
   }
 
   revalidatePath(`/claims/${claimId}`);
@@ -139,7 +147,12 @@ export async function submitRatingAction(formData: FormData) {
   redirect(`/claims/${claimId}?success=${encodeURIComponent("Thanks for rating this exchange.")}`);
 }
 
-export async function sendMessageAction(formData: FormData) {
+export type SendMessageFormState = { error?: string };
+
+export async function sendMessageAction(
+  _prevState: SendMessageFormState,
+  formData: FormData,
+): Promise<SendMessageFormState> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -151,7 +164,7 @@ export async function sendMessageAction(formData: FormData) {
   if (!claimId) redirect("/requests");
 
   if (!body) {
-    redirect(`/claims/${claimId}?error=${encodeURIComponent("Message can't be empty.")}`);
+    return { error: "Message can't be empty." };
   }
 
   // No .select() here on purpose - RLS's SELECT policy would otherwise be
@@ -160,9 +173,9 @@ export async function sendMessageAction(formData: FormData) {
   const { error } = await supabase.from("messages").insert({ claim_id: claimId, sender_id: user.id, body });
 
   if (error) {
-    redirect(`/claims/${claimId}?error=${encodeURIComponent(error.message)}`);
+    return { error: error.message };
   }
 
   revalidatePath(`/claims/${claimId}`);
-  redirect(`/claims/${claimId}`);
+  return {};
 }

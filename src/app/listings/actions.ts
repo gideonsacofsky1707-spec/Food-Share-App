@@ -15,7 +15,25 @@ type ListingFields = {
   address: string;
 };
 
-function parseListingFields(formData: FormData): ListingFields | { error: string } {
+export type ListingFieldErrors = Partial<
+  Record<
+    | "title"
+    | "description"
+    | "quantity"
+    | "address"
+    | "pickup_window_start"
+    | "pickup_window_end"
+    | "photo",
+    string
+  >
+>;
+
+export type ListingFormState = {
+  error?: string;
+  fieldErrors?: ListingFieldErrors;
+};
+
+function parseListingFields(formData: FormData): { fields: ListingFields } | { fieldErrors: ListingFieldErrors } {
   const title = String(formData.get("title") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const quantity = String(formData.get("quantity") ?? "").trim();
@@ -24,22 +42,36 @@ function parseListingFields(formData: FormData): ListingFields | { error: string
   const pickupEnd = String(formData.get("pickup_window_end") ?? "").trim();
   const address = String(formData.get("address") ?? "").trim();
 
-  if (!title || !description || !quantity || !pickupStart || !pickupEnd || !address) {
-    return { error: "Please fill in all required fields." };
+  const fieldErrors: ListingFieldErrors = {};
+  if (!title) fieldErrors.title = "Title is required.";
+  if (!description) fieldErrors.description = "Description is required.";
+  if (!quantity) fieldErrors.quantity = "Quantity is required.";
+  if (!address) fieldErrors.address = "Pickup address is required.";
+  if (!pickupStart) fieldErrors.pickup_window_start = "Pickup window start is required.";
+  if (!pickupEnd) fieldErrors.pickup_window_end = "Pickup window end is required.";
+
+  if (
+    pickupStart &&
+    pickupEnd &&
+    new Date(pickupEnd).getTime() <= new Date(pickupStart).getTime()
+  ) {
+    fieldErrors.pickup_window_end = "Pickup end time must be after the start time.";
   }
 
-  if (new Date(pickupEnd).getTime() <= new Date(pickupStart).getTime()) {
-    return { error: "Pickup window end must be after the start." };
+  if (Object.keys(fieldErrors).length > 0) {
+    return { fieldErrors };
   }
 
   return {
-    title,
-    description,
-    quantity,
-    best_by: bestByRaw || null,
-    pickup_window_start: pickupStart,
-    pickup_window_end: pickupEnd,
-    address,
+    fields: {
+      title,
+      description,
+      quantity,
+      best_by: bestByRaw || null,
+      pickup_window_start: pickupStart,
+      pickup_window_end: pickupEnd,
+      address,
+    },
   };
 }
 
@@ -87,22 +119,25 @@ async function uploadListingPhoto(
   return { ok: true, publicUrl: `${publicUrl}?t=${Date.now()}` };
 }
 
-export async function createListingAction(formData: FormData) {
+export async function createListingAction(
+  _prevState: ListingFormState,
+  formData: FormData,
+): Promise<ListingFormState> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const fields = parseListingFields(formData);
-  if ("error" in fields) {
-    redirect(`/listings/new?error=${encodeURIComponent(fields.error)}`);
+  const parsed = parseListingFields(formData);
+  if ("fieldErrors" in parsed) {
+    return { fieldErrors: parsed.fieldErrors };
   }
 
-  const { address, ...listingFields } = fields;
+  const { address, ...listingFields } = parsed.fields;
   const location = await resolveLocationFields(address);
   if (!location.ok) {
-    redirect(`/listings/new?error=${encodeURIComponent(location.error)}`);
+    return { fieldErrors: { address: location.error } };
   }
 
   const { data: listing, error } = await supabase
@@ -118,14 +153,14 @@ export async function createListingAction(formData: FormData) {
     .single();
 
   if (error || !listing) {
-    redirect(`/listings/new?error=${encodeURIComponent(error?.message ?? "Could not create listing.")}`);
+    return { error: error?.message ?? "Could not create listing." };
   }
 
   const photo = formData.get("photo");
   if (photo instanceof File && photo.size > 0) {
     const result = await uploadListingPhoto(supabase, user.id, listing.id, photo);
     if (!result.ok) {
-      redirect(`/listings/new?error=${encodeURIComponent(result.error)}`);
+      return { fieldErrors: { photo: result.error } };
     }
     await supabase.from("listings").update({ photo_url: result.publicUrl }).eq("id", listing.id);
   }
@@ -134,7 +169,10 @@ export async function createListingAction(formData: FormData) {
   redirect("/listings?success=Listing+created");
 }
 
-export async function updateListingAction(formData: FormData) {
+export async function updateListingAction(
+  _prevState: ListingFormState,
+  formData: FormData,
+): Promise<ListingFormState> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -144,15 +182,15 @@ export async function updateListingAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) redirect("/listings");
 
-  const fields = parseListingFields(formData);
-  if ("error" in fields) {
-    redirect(`/listings/${id}/edit?error=${encodeURIComponent(fields.error)}`);
+  const parsed = parseListingFields(formData);
+  if ("fieldErrors" in parsed) {
+    return { fieldErrors: parsed.fieldErrors };
   }
 
-  const { address, ...listingFields } = fields;
+  const { address, ...listingFields } = parsed.fields;
   const location = await resolveLocationFields(address);
   if (!location.ok) {
-    redirect(`/listings/${id}/edit?error=${encodeURIComponent(location.error)}`);
+    return { fieldErrors: { address: location.error } };
   }
 
   const { error } = await supabase
@@ -167,14 +205,14 @@ export async function updateListingAction(formData: FormData) {
     .eq("owner_id", user.id);
 
   if (error) {
-    redirect(`/listings/${id}/edit?error=${encodeURIComponent(error.message)}`);
+    return { error: error.message };
   }
 
   const photo = formData.get("photo");
   if (photo instanceof File && photo.size > 0) {
     const result = await uploadListingPhoto(supabase, user.id, id, photo);
     if (!result.ok) {
-      redirect(`/listings/${id}/edit?error=${encodeURIComponent(result.error)}`);
+      return { fieldErrors: { photo: result.error } };
     }
     await supabase
       .from("listings")

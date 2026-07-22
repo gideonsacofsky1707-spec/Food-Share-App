@@ -7,13 +7,10 @@ import type { ListingPrivateLocation, PublicListing } from "@/types/database";
 
 export default async function EditListingPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
 }) {
   const { id } = await params;
-  const { error } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -43,7 +40,6 @@ export default async function EditListingPage({
         action={updateListingAction}
         listing={listing}
         defaultAddress={privateLocation?.exact_address ?? undefined}
-        error={error}
         submitLabel="Save changes"
         pendingLabel="Saving…"
       />

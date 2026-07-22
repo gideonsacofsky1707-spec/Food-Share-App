@@ -1,5 +1,9 @@
+"use client";
+
+import { useActionState } from "react";
 import { AddressAutocomplete } from "@/components/listings/address-autocomplete";
 import { SubmitButton } from "@/components/submit-button";
+import type { ListingFormState } from "@/app/listings/actions";
 import type { PublicListing } from "@/types/database";
 
 function toDateTimeLocal(value: string | null) {
@@ -7,28 +11,55 @@ function toDateTimeLocal(value: string | null) {
   return value.slice(0, 16);
 }
 
+const initialState: ListingFormState = {};
+
+function fieldClassName(hasError: boolean) {
+  return `rounded-md border px-3 py-2 dark:bg-zinc-900 ${
+    hasError ? "border-red-500 dark:border-red-500" : "border-zinc-300 dark:border-zinc-700"
+  }`;
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <span className="text-xs text-red-600 dark:text-red-400">{message}</span>;
+}
+
 export function ListingForm({
   action,
   listing,
   defaultAddress,
-  error,
   submitLabel,
   pendingLabel = "Saving…",
 }: {
-  action: (formData: FormData) => void | Promise<void>;
+  action: (prevState: ListingFormState, formData: FormData) => Promise<ListingFormState>;
   listing?: PublicListing;
   defaultAddress?: string;
-  error?: string;
   submitLabel: string;
   pendingLabel?: string;
 }) {
+  const [state, dispatch, isPending] = useActionState(action, initialState);
+  const fieldErrors = state.fieldErrors ?? {};
+
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form
+      // Submitting via a plain onSubmit (rather than passing `dispatch`
+      // straight to the form's `action`) is deliberate: React resets every
+      // uncontrolled field - including file inputs - once an action-prop
+      // form's action settles, whether it returns success or a validation
+      // error. Dispatching by hand here sidesteps that reset entirely, so
+      // everything the user typed (and any photo they picked) survives a
+      // failed submission untouched.
+      onSubmit={(event) => {
+        event.preventDefault();
+        dispatch(new FormData(event.currentTarget));
+      }}
+      className="flex flex-col gap-4"
+    >
       {listing && <input type="hidden" name="id" value={listing.id} />}
 
-      {error && (
+      {state.error && (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          {error}
+          {state.error}
         </p>
       )}
 
@@ -48,8 +79,10 @@ export function ListingForm({
           name="title"
           required
           defaultValue={listing?.title}
-          className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+          aria-invalid={!!fieldErrors.title}
+          className={fieldClassName(!!fieldErrors.title)}
         />
+        <FieldError message={fieldErrors.title} />
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
@@ -59,8 +92,10 @@ export function ListingForm({
           required
           rows={4}
           defaultValue={listing?.description}
-          className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+          aria-invalid={!!fieldErrors.description}
+          className={fieldClassName(!!fieldErrors.description)}
         />
+        <FieldError message={fieldErrors.description} />
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
@@ -71,13 +106,15 @@ export function ListingForm({
           required
           placeholder='e.g. "serves 4" or "1 bag"'
           defaultValue={listing?.quantity}
-          className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+          aria-invalid={!!fieldErrors.quantity}
+          className={fieldClassName(!!fieldErrors.quantity)}
         />
+        <FieldError message={fieldErrors.quantity} />
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
         Pickup address
-        <AddressAutocomplete defaultValue={defaultAddress} />
+        <AddressAutocomplete defaultValue={defaultAddress} error={fieldErrors.address} />
         <span className="text-xs text-zinc-500 dark:text-zinc-400">
           Only a neighborhood-level area is shown publicly. The full address is only
           shared with you and, later, a claimer you&apos;ve accepted.
@@ -102,8 +139,10 @@ export function ListingForm({
             name="pickup_window_start"
             required
             defaultValue={toDateTimeLocal(listing?.pickup_window_start ?? null)}
-            className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+            aria-invalid={!!fieldErrors.pickup_window_start}
+            className={fieldClassName(!!fieldErrors.pickup_window_start)}
           />
+          <FieldError message={fieldErrors.pickup_window_start} />
         </label>
         <label className="flex flex-col gap-1 text-sm">
           Pickup window end
@@ -112,17 +151,27 @@ export function ListingForm({
             name="pickup_window_end"
             required
             defaultValue={toDateTimeLocal(listing?.pickup_window_end ?? null)}
-            className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
+            aria-invalid={!!fieldErrors.pickup_window_end}
+            className={fieldClassName(!!fieldErrors.pickup_window_end)}
           />
+          <FieldError message={fieldErrors.pickup_window_end} />
         </label>
       </div>
 
       <label className="flex flex-col gap-1 text-sm">
         {listing?.photo_url ? "Replace photo (optional)" : "Photo (optional)"}
-        <input type="file" name="photo" accept="image/*" />
+        <input
+          type="file"
+          name="photo"
+          accept="image/*"
+          aria-invalid={!!fieldErrors.photo}
+          className={fieldErrors.photo ? "text-red-600 dark:text-red-400" : undefined}
+        />
+        <FieldError message={fieldErrors.photo} />
       </label>
 
       <SubmitButton
+        pending={isPending}
         pendingLabel={pendingLabel}
         className="rounded-full bg-zinc-900 px-5 py-2 font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
       >

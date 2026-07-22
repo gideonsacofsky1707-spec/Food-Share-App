@@ -4,21 +4,30 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 
-export async function signUpAction(formData: FormData) {
+export type SignUpFormState = {
+  error?: string;
+  fieldErrors?: {
+    display_name?: string;
+    accepted_terms?: string;
+  };
+};
+
+export async function signUpAction(
+  _prevState: SignUpFormState,
+  formData: FormData,
+): Promise<SignUpFormState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
   const displayName = String(formData.get("display_name") ?? "").trim();
   const acceptedTerms = formData.get("accepted_terms") === "on";
 
-  if (!displayName) {
-    redirect(`/signup?error=${encodeURIComponent("Display name is required.")}`);
-  }
+  const fieldErrors: SignUpFormState["fieldErrors"] = {};
+  if (!displayName) fieldErrors.display_name = "Display name is required.";
   if (!acceptedTerms) {
-    redirect(
-      `/signup?error=${encodeURIComponent(
-        "You must accept the terms before signing up.",
-      )}`,
-    );
+    fieldErrors.accepted_terms = "You must accept the terms before signing up.";
+  }
+  if (Object.keys(fieldErrors).length > 0) {
+    return { fieldErrors };
   }
 
   const supabase = await createClient();
@@ -29,13 +38,18 @@ export async function signUpAction(formData: FormData) {
   });
 
   if (error) {
-    redirect(`/signup?error=${encodeURIComponent(error.message)}`);
+    return { error: error.message };
   }
 
   redirect("/profile");
 }
 
-export async function loginAction(formData: FormData) {
+export type LoginFormState = { error?: string };
+
+export async function loginAction(
+  _prevState: LoginFormState,
+  formData: FormData,
+): Promise<LoginFormState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
@@ -43,7 +57,7 @@ export async function loginAction(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    redirect(`/login?error=${encodeURIComponent(error.message)}`);
+    return { error: error.message };
   }
 
   redirect("/profile");
@@ -55,7 +69,15 @@ export async function signOutAction() {
   redirect("/");
 }
 
-export async function updateProfileAction(formData: FormData) {
+export type UpdateProfileFormState = {
+  error?: string;
+  fieldErrors?: { display_name?: string };
+};
+
+export async function updateProfileAction(
+  _prevState: UpdateProfileFormState,
+  formData: FormData,
+): Promise<UpdateProfileFormState> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -64,7 +86,7 @@ export async function updateProfileAction(formData: FormData) {
 
   const displayName = String(formData.get("display_name") ?? "").trim();
   if (!displayName) {
-    redirect(`/profile?error=${encodeURIComponent("Display name can't be empty.")}`);
+    return { fieldErrors: { display_name: "Display name can't be empty." } };
   }
 
   const { error } = await supabase
@@ -73,14 +95,19 @@ export async function updateProfileAction(formData: FormData) {
     .eq("id", user.id);
 
   if (error) {
-    redirect(`/profile?error=${encodeURIComponent(error.message)}`);
+    return { error: error.message };
   }
 
   revalidatePath("/profile");
   redirect("/profile?success=Profile+updated");
 }
 
-export async function uploadAvatarAction(formData: FormData) {
+export type UploadAvatarFormState = { error?: string };
+
+export async function uploadAvatarAction(
+  _prevState: UploadAvatarFormState,
+  formData: FormData,
+): Promise<UploadAvatarFormState> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -89,7 +116,7 @@ export async function uploadAvatarAction(formData: FormData) {
 
   const file = formData.get("avatar");
   if (!(file instanceof File) || file.size === 0) {
-    redirect(`/profile?error=${encodeURIComponent("Choose an image to upload.")}`);
+    return { error: "Choose an image to upload." };
   }
 
   const extension = file.name.split(".").pop() || "jpg";
@@ -100,7 +127,7 @@ export async function uploadAvatarAction(formData: FormData) {
     .upload(path, file, { upsert: true, contentType: file.type });
 
   if (uploadError) {
-    redirect(`/profile?error=${encodeURIComponent(uploadError.message)}`);
+    return { error: uploadError.message };
   }
 
   const {
@@ -113,7 +140,7 @@ export async function uploadAvatarAction(formData: FormData) {
     .eq("id", user.id);
 
   if (updateError) {
-    redirect(`/profile?error=${encodeURIComponent(updateError.message)}`);
+    return { error: updateError.message };
   }
 
   revalidatePath("/profile");
