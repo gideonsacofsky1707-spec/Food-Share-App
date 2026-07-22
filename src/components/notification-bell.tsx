@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+
+const NOTIFICATIONS_PATH = "/notifications";
 
 export function NotificationBell({
   userId,
@@ -11,7 +14,14 @@ export function NotificationBell({
   userId: string;
   initialUnreadCount: number;
 }) {
-  const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
+  const pathname = usePathname();
+
+  // If this mounts already on /notifications (a hard load or refresh), skip
+  // straight to 0 - the page marks everything read before it even renders,
+  // so there's no stale count worth showing first.
+  const [unreadCount, setUnreadCount] = useState(
+    pathname === NOTIFICATIONS_PATH ? 0 : initialUnreadCount,
+  );
 
   // Stay in sync with the server-computed count across navigations (e.g.
   // after visiting /notifications marks some as read). Adjusting state
@@ -22,6 +32,20 @@ export function NotificationBell({
   if (initialUnreadCount !== prevInitialUnreadCount) {
     setPrevInitialUnreadCount(initialUnreadCount);
     setUnreadCount(initialUnreadCount);
+  }
+
+  // NotificationBell lives in the root layout, which - unlike a page -
+  // doesn't get a fresh server render on every client-side navigation, so
+  // arriving at /notifications this way would otherwise leave the badge
+  // showing its pre-visit count until something else happened to trigger a
+  // layout refresh. Clearing it the moment the route itself changes to
+  // /notifications makes it immediate regardless of how the user got here.
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    if (pathname === NOTIFICATIONS_PATH) {
+      setUnreadCount(0);
+    }
   }
 
   useEffect(() => {
