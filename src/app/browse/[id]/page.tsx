@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { requestClaimAction } from "@/app/claims/actions";
 import { ReportButton } from "@/components/reports/report-button";
 import { PushPermissionPrompt } from "@/components/push/push-permission-prompt";
+import { ListingStatusBadge } from "@/components/listings/listing-status-badge";
 import { SubmitButton } from "@/components/submit-button";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
 import type { Claim, ListingPrivateLocation, PublicListing, User } from "@/types/database";
 
@@ -42,6 +43,21 @@ export default async function ListingDetailPage({
     .maybeSingle<ListingPrivateLocation>();
 
   const isOwner = user?.id === listing.owner_id;
+
+  // Only meaningful (and only worth the query) while the listing is still
+  // active - "Requested" vs "Available" is the one nuance the status enum
+  // itself can't tell us, since several people can request the same active
+  // listing before the owner decides. Visible to any viewer, not just the
+  // owner - it's just a demand signal, not private information.
+  let hasPendingRequest = false;
+  if (listing.status === "active") {
+    const { count } = await supabase
+      .from("claims")
+      .select("*", { count: "exact", head: true })
+      .eq("listing_id", id)
+      .eq("status", "requested");
+    hasPendingRequest = (count ?? 0) > 0;
+  }
 
   const { data: owner } = await supabase
     .from("users")
@@ -85,15 +101,7 @@ export default async function ListingDetailPage({
         <h1 className="min-w-0 text-2xl font-semibold tracking-tight break-words">
           {listing.title}
         </h1>
-        <span
-          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-            listing.status === "active"
-              ? "bg-accent-100 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300"
-              : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
-          }`}
-        >
-          {listing.status}
-        </span>
+        <ListingStatusBadge status={listing.status} hasPendingRequest={hasPendingRequest} />
       </div>
 
       {owner && (
@@ -135,7 +143,7 @@ export default async function ListingDetailPage({
         {listing.best_by && (
           <div className="flex gap-2">
             <dt className="font-medium text-zinc-500 dark:text-zinc-400">Best by</dt>
-            <dd>{formatDateTime(listing.best_by)}</dd>
+            <dd>{formatDate(listing.best_by)}</dd>
           </div>
         )}
         {privateLocation?.exact_address ? (

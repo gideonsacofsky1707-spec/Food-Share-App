@@ -3,12 +3,13 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { markCollectedAction } from "@/app/claims/actions";
 import { ChatThread } from "@/components/claims/chat-thread";
+import { ClaimStepBanner } from "@/components/claims/claim-step-banner";
 import { MarkCollectedForm } from "@/components/claims/mark-collected-form";
 import { RatingForm } from "@/components/claims/rating-form";
 import { SendMessageForm } from "@/components/claims/send-message-form";
 import { formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
-import type { ClaimWithParticipants, Message, Rating } from "@/types/database";
+import type { ClaimWithParticipants, ListingPrivateLocation, Message, Rating } from "@/types/database";
 
 export default async function ClaimChatPage({
   params,
@@ -67,6 +68,18 @@ export default async function ClaimChatPage({
     myRating = data;
   }
 
+  // Only fetched for display to the claimer - the owner already knows their
+  // own listing's address. Empty unless the caller is the owner or an
+  // accepted/completed claimer, see get_listing_private_location() in
+  // 0004_listing_location_privacy.sql.
+  let pickupAddress: string | null = null;
+  if (!isOwner && (claim.status === "accepted" || claim.status === "completed")) {
+    const { data } = await supabase
+      .rpc("get_listing_private_location", { p_listing_id: claim.listing.id })
+      .maybeSingle<ListingPrivateLocation>();
+    pickupAddress = data?.exact_address ?? null;
+  }
+
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-16">
       <div>
@@ -103,12 +116,14 @@ export default async function ClaimChatPage({
         </p>
       )}
 
-      {claim.status !== "accepted" && claim.status !== "completed" ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Chat opens once this request is accepted. Current status:{" "}
-          <span className="font-medium text-zinc-900 dark:text-zinc-100">{claim.status}</span>
-        </p>
-      ) : (
+      <ClaimStepBanner
+        status={claim.status}
+        isOwner={isOwner}
+        hasRated={!!myRating}
+        pickupAddress={pickupAddress}
+      />
+
+      {(claim.status === "accepted" || claim.status === "completed") && (
         <>
           {claim.status === "accepted" && (
             <MarkCollectedForm

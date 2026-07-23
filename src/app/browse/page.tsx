@@ -19,6 +19,20 @@ export default async function BrowsePage() {
     .order("created_at", { ascending: false })
     .returns<PublicListing[]>();
 
+  // Batched rather than one query per card: which of these (all already
+  // "active") have at least one pending request, so the card badge can read
+  // "Requested" instead of "Available" - the one nuance the status column
+  // itself can't tell us.
+  const listingIds = (listings ?? []).map((listing) => listing.id);
+  const { data: pendingClaims } = listingIds.length
+    ? await supabase
+        .from("claims")
+        .select("listing_id")
+        .eq("status", "requested")
+        .in("listing_id", listingIds)
+    : { data: [] as { listing_id: string }[] };
+  const pendingRequestListingIds = new Set((pendingClaims ?? []).map((c) => c.listing_id));
+
   // Approximate coordinates only - see 0013_map_pins.sql for why this can't
   // just be a plain select on listings.location.
   //
@@ -42,7 +56,13 @@ export default async function BrowsePage() {
       <h1 className="text-2xl font-semibold tracking-tight">Browse listings</h1>
 
       <BrowseViewToggle
-        listView={<ListingsList listings={listings ?? []} emptyStateAction={emptyStateAction} />}
+        listView={
+          <ListingsList
+            listings={listings ?? []}
+            pendingRequestListingIds={pendingRequestListingIds}
+            emptyStateAction={emptyStateAction}
+          />
+        }
         mapView={<ListingsMap pins={mapPins} emptyStateAction={emptyStateAction} />}
       />
     </main>
