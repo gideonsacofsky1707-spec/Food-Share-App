@@ -14,6 +14,9 @@ export interface User {
   rating_avg: number;
   rating_count: number;
   is_verified: boolean;
+  is_admin: boolean;
+  is_banned: boolean;
+  banned_at: string | null;
 }
 
 // `location` and `exact_address` are as sensitive as a pinned address, so
