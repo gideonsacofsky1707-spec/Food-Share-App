@@ -11,6 +11,11 @@ function toDateTimeLocal(value: string | null) {
   return value.slice(0, 16);
 }
 
+function toDateOnly(value: string | null) {
+  if (!value) return "";
+  return value.slice(0, 10);
+}
+
 const initialState: ListingFormState = {};
 
 function fieldClassName(hasError: boolean) {
@@ -124,9 +129,9 @@ export function ListingForm({
       <label className="flex flex-col gap-1 text-sm">
         Best by (optional)
         <input
-          type="datetime-local"
+          type="date"
           name="best_by"
-          defaultValue={toDateTimeLocal(listing?.best_by ?? null)}
+          defaultValue={toDateOnly(listing?.best_by ?? null)}
           className="rounded-md border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-900"
         />
       </label>

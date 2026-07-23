@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 import { deleteListingAction } from "@/app/listings/actions";
 import { DeleteListingForm } from "@/components/listings/delete-listing-button";
 import { EmptyState } from "@/components/empty-state";
+import { ListingStatusBadge } from "@/components/listings/listing-status-badge";
 import { PushPermissionPrompt } from "@/components/push/push-permission-prompt";
-import { formatDateTime } from "@/lib/format";
+import { formatDate, formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
 import type { PublicListing } from "@/types/database";
 
@@ -29,6 +30,22 @@ export default async function ListingsPage({
     .neq("status", "removed")
     .order("created_at", { ascending: false })
     .returns<PublicListing[]>();
+
+  // Batched rather than one query per card - see browse/page.tsx for the
+  // same pattern; "Requested" vs "Available" isn't stored on the listing
+  // itself since several people can request the same active listing before
+  // this owner decides.
+  const activeListingIds = (listings ?? [])
+    .filter((listing) => listing.status === "active")
+    .map((listing) => listing.id);
+  const { data: pendingClaims } = activeListingIds.length
+    ? await supabase
+        .from("claims")
+        .select("listing_id")
+        .eq("status", "requested")
+        .in("listing_id", activeListingIds)
+    : { data: [] as { listing_id: string }[] };
+  const pendingRequestListingIds = new Set((pendingClaims ?? []).map((c) => c.listing_id));
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-16">
@@ -84,15 +101,10 @@ export default async function ListingsPage({
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="min-w-0 break-words font-semibold">{listing.title}</h2>
-                  <span
-                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
-                      listing.status === "active"
-                        ? "bg-accent-100 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300"
-                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
-                    }`}
-                  >
-                    {listing.status}
-                  </span>
+                  <ListingStatusBadge
+                    status={listing.status}
+                    hasPendingRequest={pendingRequestListingIds.has(listing.id)}
+                  />
                 </div>
                 <p className="break-words text-sm text-zinc-600 dark:text-zinc-400">{listing.quantity}</p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-500">
@@ -101,7 +113,7 @@ export default async function ListingsPage({
                 </p>
                 {listing.best_by && (
                   <p className="text-xs text-zinc-500 dark:text-zinc-500">
-                    Best by: {formatDateTime(listing.best_by)}
+                    Best by: {formatDate(listing.best_by)}
                   </p>
                 )}
                 <div className="mt-2 flex gap-3">

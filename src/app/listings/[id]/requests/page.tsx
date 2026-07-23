@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { acceptClaimAction, declineClaimAction } from "@/app/claims/actions";
+import { ListingStatusBadge } from "@/components/listings/listing-status-badge";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
@@ -41,6 +42,8 @@ export default async function ListingRequestsPage({
     .order("created_at", { ascending: false })
     .returns<ClaimWithClaimer[]>();
 
+  const hasPendingRequest = (claims ?? []).some((claim) => claim.status === "requested");
+
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-16">
       <div>
@@ -51,15 +54,9 @@ export default async function ListingRequestsPage({
 
       <div>
         <h1 className="break-words text-2xl font-semibold tracking-tight">Requests for {listing.title}</h1>
-        <span
-          className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-            listing.status === "active"
-              ? "bg-accent-100 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300"
-              : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
-          }`}
-        >
-          Listing status: {listing.status}
-        </span>
+        <div className="mt-1">
+          <ListingStatusBadge status={listing.status} hasPendingRequest={hasPendingRequest} />
+        </div>
       </div>
 
       {error && (

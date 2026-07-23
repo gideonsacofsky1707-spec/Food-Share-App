@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { ListingStatusBadge } from "@/components/listings/listing-status-badge";
 import { formatDateTime } from "@/lib/format";
 import type { PublicListing } from "@/types/database";
 
@@ -9,9 +10,11 @@ import type { PublicListing } from "@/types/database";
 // can't cause the mismatch that bit ChatThread (see its comment).
 export function ListingsList({
   listings,
+  pendingRequestListingIds,
   emptyStateAction,
 }: {
   listings: PublicListing[];
+  pendingRequestListingIds: Set<string>;
   emptyStateAction: { href: string; label: string };
 }) {
   if (listings.length === 0) {
@@ -46,7 +49,13 @@ export function ListingsList({
             )}
 
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <h2 className="min-w-0 break-words font-semibold">{listing.title}</h2>
+              <div className="flex items-center justify-between gap-2">
+                <h2 className="min-w-0 break-words font-semibold">{listing.title}</h2>
+                <ListingStatusBadge
+                  status={listing.status}
+                  hasPendingRequest={pendingRequestListingIds.has(listing.id)}
+                />
+              </div>
               <p className="break-words text-sm text-zinc-600 dark:text-zinc-400">{listing.quantity}</p>
               <p className="text-xs text-zinc-500 dark:text-zinc-500">
                 Pickup: {formatDateTime(listing.pickup_window_start)} –{" "}
