@@ -12,6 +12,18 @@ export default async function NotificationsPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // Opening this view marks everything as read, right away - not just the
+  // notifications the user goes on to click. See NotificationBell for how
+  // the header badge clears immediately without waiting on a fresh server
+  // render to pick this up (it can't: the root layout - and its badge -
+  // renders before this page does, so a hard load here would otherwise
+  // still show the stale count).
+  await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("user_id", user.id)
+    .eq("read", false);
+
   const { data: notifications } = await supabase
     .from("notifications")
     .select("*")
@@ -35,7 +47,7 @@ export default async function NotificationsPage() {
                 <input type="hidden" name="notification_id" value={notification.id} />
                 <input type="hidden" name="redirect_to" value={notification.link} />
                 <NotificationSubmitButton read={notification.read}>
-                  <span className="text-sm font-medium">{notification.message}</span>
+                  <span className="min-w-0 break-words text-sm font-medium">{notification.message}</span>
                   <span className="text-xs text-zinc-500 dark:text-zinc-500">
                     {formatDateTime(notification.created_at)}
                   </span>

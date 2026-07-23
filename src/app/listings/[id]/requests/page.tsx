@@ -50,7 +50,7 @@ export default async function ListingRequestsPage({
       </div>
 
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Requests for {listing.title}</h1>
+        <h1 className="break-words text-2xl font-semibold tracking-tight">Requests for {listing.title}</h1>
         <span className="mt-1 inline-block rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
           Listing status: {listing.status}
         </span>
@@ -91,7 +91,9 @@ export default async function ListingRequestsPage({
                 )}
 
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="break-words font-semibold">{claim.claimer.display_name}</span>
+                  <Link href={`/users/${claim.claimer_id}`} className="break-words font-semibold underline">
+                    {claim.claimer.display_name}
+                  </Link>
                   <span className="text-xs text-zinc-500 dark:text-zinc-500">
                     Requested {formatDateTime(claim.created_at)}
                   </span>

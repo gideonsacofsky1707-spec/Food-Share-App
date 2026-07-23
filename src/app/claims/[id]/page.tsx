@@ -79,9 +79,12 @@ export default async function ClaimChatPage({
       </div>
 
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{claim.listing.title}</h1>
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Chat with {otherParty.display_name}
+        <h1 className="break-words text-2xl font-semibold tracking-tight">{claim.listing.title}</h1>
+        <p className="break-words text-sm text-zinc-600 dark:text-zinc-400">
+          Chat with{" "}
+          <Link href={`/users/${otherPartyId}`} className="underline">
+            {otherParty.display_name}
+          </Link>
         </p>
         <p className="text-xs text-zinc-500 dark:text-zinc-500">
           Pickup: {formatDateTime(claim.listing.pickup_window_start)} –{" "}

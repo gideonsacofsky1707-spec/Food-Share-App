@@ -129,9 +129,9 @@ export function ListingsMap({ pins }: { pins: MapPin[] }) {
               🍲
             </div>
           )}
-          <div className="flex flex-1 flex-col gap-1">
-            <h3 className="text-sm font-semibold">{selectedPin.title}</h3>
-            <p className="text-xs text-zinc-600 dark:text-zinc-400">{selectedPin.quantity}</p>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <h3 className="min-w-0 break-words text-sm font-semibold">{selectedPin.title}</h3>
+            <p className="break-words text-xs text-zinc-600 dark:text-zinc-400">{selectedPin.quantity}</p>
             <Link href={`/browse/${selectedPin.id}`} className="text-xs font-medium underline">
               View listing
             </Link>

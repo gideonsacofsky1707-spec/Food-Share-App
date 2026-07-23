@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requestClaimAction } from "@/app/claims/actions";
+import { ReportButton } from "@/components/reports/report-button";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
-import type { Claim, ListingPrivateLocation, PublicListing } from "@/types/database";
+import type { Claim, ListingPrivateLocation, PublicListing, User } from "@/types/database";
 
 export default async function ListingDetailPage({
   params,
@@ -40,6 +41,12 @@ export default async function ListingDetailPage({
     .maybeSingle<ListingPrivateLocation>();
 
   const isOwner = user?.id === listing.owner_id;
+
+  const { data: owner } = await supabase
+    .from("users")
+    .select("display_name")
+    .eq("id", listing.owner_id)
+    .maybeSingle<Pick<User, "display_name">>();
 
   let myClaim: Claim | null = null;
   if (user && !isOwner) {
@@ -82,6 +89,15 @@ export default async function ListingDetailPage({
         </span>
       </div>
 
+      {owner && (
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          Posted by{" "}
+          <Link href={`/users/${listing.owner_id}`} className="break-words underline">
+            {owner.display_name}
+          </Link>
+        </p>
+      )}
+
       {error && (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
           {error}
@@ -93,12 +109,12 @@ export default async function ListingDetailPage({
         </p>
       )}
 
-      <p className="text-zinc-700 dark:text-zinc-300">{listing.description}</p>
+      <p className="break-words text-zinc-700 dark:text-zinc-300">{listing.description}</p>
 
       <dl className="flex flex-col gap-2 text-sm">
         <div className="flex gap-2">
-          <dt className="font-medium text-zinc-500 dark:text-zinc-400">Quantity</dt>
-          <dd>{listing.quantity}</dd>
+          <dt className="shrink-0 font-medium text-zinc-500 dark:text-zinc-400">Quantity</dt>
+          <dd className="min-w-0 break-words">{listing.quantity}</dd>
         </div>
         <div className="flex gap-2">
           <dt className="font-medium text-zinc-500 dark:text-zinc-400">Pickup window</dt>
@@ -115,14 +131,14 @@ export default async function ListingDetailPage({
         )}
         {privateLocation?.exact_address ? (
           <div className="flex gap-2">
-            <dt className="font-medium text-zinc-500 dark:text-zinc-400">Pickup address</dt>
-            <dd>{privateLocation.exact_address}</dd>
+            <dt className="shrink-0 font-medium text-zinc-500 dark:text-zinc-400">Pickup address</dt>
+            <dd className="min-w-0 break-words">{privateLocation.exact_address}</dd>
           </div>
         ) : (
           listing.approx_location_label && (
             <div className="flex gap-2">
-              <dt className="font-medium text-zinc-500 dark:text-zinc-400">General area</dt>
-              <dd>{listing.approx_location_label}</dd>
+              <dt className="shrink-0 font-medium text-zinc-500 dark:text-zinc-400">General area</dt>
+              <dd className="min-w-0 break-words">{listing.approx_location_label}</dd>
             </div>
           )
         )}
@@ -165,6 +181,8 @@ export default async function ListingDetailPage({
           </SubmitButton>
         </form>
       ) : null}
+
+      {user && !isOwner && <ReportButton reportedListingId={listing.id} label="Report listing" />}
     </main>
   );
 }

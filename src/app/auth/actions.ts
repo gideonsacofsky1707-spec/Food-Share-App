@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import type { User } from "@/types/database";
 
 export type SignUpFormState = {
   error?: string;
@@ -54,10 +55,21 @@ export async function loginAction(
   const password = String(formData.get("password") ?? "");
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: error.message };
+  }
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("is_banned")
+    .eq("id", data.user.id)
+    .maybeSingle<Pick<User, "is_banned">>();
+
+  if (profile?.is_banned) {
+    await supabase.auth.signOut();
+    return { error: "This account has been suspended." };
   }
 
   redirect("/profile");

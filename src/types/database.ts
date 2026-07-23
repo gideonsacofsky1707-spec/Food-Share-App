@@ -14,6 +14,9 @@ export interface User {
   rating_avg: number;
   rating_count: number;
   is_verified: boolean;
+  is_admin: boolean;
+  is_banned: boolean;
+  banned_at: string | null;
 }
 
 // `location` and `exact_address` are as sensitive as a pinned address, so
@@ -117,6 +120,19 @@ export interface Report {
   reported_user_id: string | null;
   reported_listing_id: string | null;
   reason: string;
+  details: string | null;
   status: ReportStatus;
   created_at: string;
 }
+
+export interface Block {
+  id: string;
+  blocker_id: string;
+  blocked_id: string;
+  created_at: string;
+}
+
+export type PublicProfile = Pick<
+  User,
+  "id" | "display_name" | "avatar_url" | "rating_avg" | "rating_count"
+>;
