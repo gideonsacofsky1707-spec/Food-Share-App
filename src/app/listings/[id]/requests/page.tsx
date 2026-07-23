@@ -51,7 +51,13 @@ export default async function ListingRequestsPage({
 
       <div>
         <h1 className="break-words text-2xl font-semibold tracking-tight">Requests for {listing.title}</h1>
-        <span className="mt-1 inline-block rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+        <span
+          className={`mt-1 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+            listing.status === "active"
+              ? "bg-accent-100 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300"
+              : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+          }`}
+        >
           Listing status: {listing.status}
         </span>
       </div>
@@ -107,7 +113,7 @@ export default async function ListingRequestsPage({
                     <input type="hidden" name="listing_id" value={id} />
                     <SubmitButton
                       pendingLabel="Accepting…"
-                      className="rounded-full bg-zinc-900 px-3 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+                      className="rounded-full bg-primary-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 dark:bg-primary-500 dark:text-zinc-950 dark:hover:bg-primary-400"
                     >
                       Accept
                     </SubmitButton>

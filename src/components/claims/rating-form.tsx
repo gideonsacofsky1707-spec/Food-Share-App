@@ -66,7 +66,7 @@ export function RatingForm({
       <SubmitButton
         pending={isPending}
         pendingLabel="Submitting…"
-        className="self-start rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+        className="self-start rounded-full bg-primary-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 dark:bg-primary-500 dark:text-zinc-950 dark:hover:bg-primary-400"
       >
         Submit rating
       </SubmitButton>

@@ -8,8 +8,54 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-outfit);
   --font-mono: var(--font-geist-mono);
+
+  /* Brand palette - see also nav-header.tsx (wordmark), layout.tsx
+     (viewport theme-color) and manifest.ts (PWA theme/icons), which all
+     key off this same primary color for one consistent identity. */
+  --color-primary-50: #fff7ed;
+  --color-primary-100: #ffedd5;
+  --color-primary-200: #fed7aa;
+  --color-primary-300: #fdba74;
+  --color-primary-400: #fb923c;
+  --color-primary-500: #f97316;
+  --color-primary-600: #ea580c;
+  --color-primary-700: #c2410c;
+  --color-primary-800: #9a3412;
+  --color-primary-900: #7c2d12;
+  --color-primary-950: #431407;
+
+  /* Accent - reserved for status highlights (e.g. an "active"/available
+     listing), never for primary actions/buttons - keeps the two visually
+     distinct so "available" reads as a status, not a call to action. */
+  --color-accent-50: #ecfdf5;
+  --color-accent-100: #d1fae5;
+  --color-accent-200: #a7f3d0;
+  --color-accent-300: #6ee7b7;
+  --color-accent-400: #34d399;
+  --color-accent-500: #10b981;
+  --color-accent-600: #059669;
+  --color-accent-700: #047857;
+  --color-accent-800: #065f46;
+  --color-accent-900: #064e3b;
+  --color-accent-950: #022c22;
+
+  /* Neutral - formalizes zinc (already used throughout for backgrounds,
+     text and borders) as the app's named neutral palette, rather than
+     introducing a second gray scale. */
+  --color-neutral-50: #fafafa;
+  --color-neutral-100: #f4f4f5;
+  --color-neutral-200: #e4e4e7;
+  --color-neutral-300: #d4d4d8;
+  --color-neutral-400: #a1a1aa;
+  --color-neutral-500: #71717a;
+  --color-neutral-600: #52525b;
+  --color-neutral-700: #3f3f46;
+  --color-neutral-800: #27272a;
+  --color-neutral-900: #18181b;
+  --color-neutral-950: #09090b;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +68,20 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Headings use the display/heading font everywhere, without having to add
+   a class to every h1-h6 across the app - matches the global input
+   font-size fix below in spirit (unlayered, so it wins over any
+   conflicting utility). */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading), var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
 /* iOS Safari auto-zooms the page on focusing any text input/textarea/select

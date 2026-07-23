@@ -52,8 +52,11 @@ export async function NavHeader() {
   return (
     <header className="border-b border-zinc-200 dark:border-zinc-800">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
-        <Link href="/" className="text-lg font-semibold tracking-tight">
-          🍲 FoodShare
+        <Link href="/" className="flex items-center gap-2 font-heading text-lg font-bold tracking-tight">
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-600 text-base dark:bg-primary-500">
+            🍲
+          </span>
+          Food<span className="text-primary-600 dark:text-primary-400">Share</span>
         </Link>
 
         <div className="flex items-center gap-3">
@@ -70,7 +73,7 @@ export async function NavHeader() {
             {!user && (
               <Link
                 href="/signup"
-                className="rounded-full bg-zinc-900 px-4 py-1.5 font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+                className="rounded-full bg-primary-600 px-4 py-1.5 font-medium text-white transition-colors hover:bg-primary-700 dark:bg-primary-500 dark:text-zinc-950 dark:hover:bg-primary-400"
               >
                 Sign up
               </Link>

@@ -35,7 +35,7 @@ export default async function ListingsPage({
         <h1 className="text-2xl font-semibold tracking-tight">My listings</h1>
         <Link
           href="/listings/new"
-          className="rounded-full bg-zinc-900 px-4 py-1.5 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+          className="rounded-full bg-primary-600 px-4 py-1.5 text-sm font-medium text-white transition-colors hover:bg-primary-700 dark:bg-primary-500 dark:text-zinc-950 dark:hover:bg-primary-400"
         >
           New listing
         </Link>
@@ -85,7 +85,13 @@ export default async function ListingsPage({
               <div className="flex min-w-0 flex-1 flex-col gap-1">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="min-w-0 break-words font-semibold">{listing.title}</h2>
-                  <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+                      listing.status === "active"
+                        ? "bg-accent-100 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300"
+                        : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+                    }`}
+                  >
                     {listing.status}
                   </span>
                 </div>

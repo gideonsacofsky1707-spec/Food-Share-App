@@ -85,7 +85,13 @@ export default async function ListingDetailPage({
         <h1 className="min-w-0 text-2xl font-semibold tracking-tight break-words">
           {listing.title}
         </h1>
-        <span className="shrink-0 rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+        <span
+          className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
+            listing.status === "active"
+              ? "bg-accent-100 text-accent-700 dark:bg-accent-900/40 dark:text-accent-300"
+              : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+          }`}
+        >
           {listing.status}
         </span>
       </div>
@@ -150,7 +156,7 @@ export default async function ListingDetailPage({
       {isOwner ? (
         <Link
           href={`/listings/${listing.id}/requests`}
-          className="self-start rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+          className="self-start rounded-full bg-primary-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 dark:bg-primary-500 dark:text-zinc-950 dark:hover:bg-primary-400"
         >
           View requests
         </Link>
@@ -167,7 +173,7 @@ export default async function ListingDetailPage({
           {myClaim.status === "accepted" && (
             <Link
               href={`/claims/${myClaim.id}`}
-              className="self-start rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+              className="self-start rounded-full bg-primary-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 dark:bg-primary-500 dark:text-zinc-950 dark:hover:bg-primary-400"
             >
               Open chat
             </Link>
@@ -178,7 +184,7 @@ export default async function ListingDetailPage({
           <input type="hidden" name="listing_id" value={listing.id} />
           <SubmitButton
             pendingLabel="Requesting…"
-            className="rounded-full bg-zinc-900 px-5 py-2 text-sm font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+            className="rounded-full bg-primary-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 dark:bg-primary-500 dark:text-zinc-950 dark:hover:bg-primary-400"
           >
             Request pickup
           </SubmitButton>

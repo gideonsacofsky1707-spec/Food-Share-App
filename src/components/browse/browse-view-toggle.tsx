@@ -23,7 +23,7 @@ export function BrowseViewToggle({
           aria-pressed={view === "list"}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             view === "list"
-              ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
+              ? "bg-primary-600 text-white dark:bg-primary-500 dark:text-zinc-950"
               : "text-zinc-600 dark:text-zinc-400"
           }`}
         >
@@ -35,7 +35,7 @@ export function BrowseViewToggle({
           aria-pressed={view === "map"}
           className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
             view === "map"
-              ? "bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900"
+              ? "bg-primary-600 text-white dark:bg-primary-500 dark:text-zinc-950"
               : "text-zinc-600 dark:text-zinc-400"
           }`}
         >
