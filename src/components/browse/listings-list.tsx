@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EmptyState } from "@/components/empty-state";
 import { formatDateTime } from "@/lib/format";
 import type { PublicListing } from "@/types/database";
 
@@ -6,12 +7,20 @@ import type { PublicListing } from "@/types/database";
 // the server and passed as a prop into BrowseViewToggle, so formatDateTime
 // (locale/timezone-dependent) never runs during client-side hydration and
 // can't cause the mismatch that bit ChatThread (see its comment).
-export function ListingsList({ listings }: { listings: PublicListing[] }) {
+export function ListingsList({
+  listings,
+  emptyStateAction,
+}: {
+  listings: PublicListing[];
+  emptyStateAction: { href: string; label: string };
+}) {
   if (listings.length === 0) {
     return (
-      <p className="text-sm text-zinc-600 dark:text-zinc-400">
-        Nothing available right now. Check back soon.
-      </p>
+      <EmptyState
+        title="No listings nearby yet"
+        description="Nothing's been shared here yet - be the first to give something away instead of letting it go to waste."
+        action={emptyStateAction}
+      />
     );
   }
 

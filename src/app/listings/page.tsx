@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { deleteListingAction } from "@/app/listings/actions";
 import { DeleteListingForm } from "@/components/listings/delete-listing-button";
+import { EmptyState } from "@/components/empty-state";
 import { PushPermissionPrompt } from "@/components/push/push-permission-prompt";
 import { formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
@@ -55,13 +56,11 @@ export default async function ListingsPage({
       <PushPermissionPrompt eligible={success === "Listing created"} />
 
       {!listings || listings.length === 0 ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          You haven&apos;t posted anything yet.{" "}
-          <Link href="/listings/new" className="underline">
-            Create your first listing
-          </Link>
-          .
-        </p>
+        <EmptyState
+          title="No listings yet"
+          description="Got extra food to share? Post your first listing and neighbors nearby will be able to find it."
+          action={{ href: "/listings/new", label: "Post your first listing" }}
+        />
       ) : (
         <ul className="flex flex-col gap-4">
           {listings.map((listing) => (

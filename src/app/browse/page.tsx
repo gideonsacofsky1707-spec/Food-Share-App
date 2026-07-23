@@ -8,6 +8,10 @@ import type { MapPin, PublicListing } from "@/types/database";
 export default async function BrowsePage() {
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const { data: listings } = await supabase
     .from("listings")
     .select(PUBLIC_LISTING_COLUMNS)
@@ -25,13 +29,21 @@ export default async function BrowsePage() {
   const { data: mapPinsData } = await supabase.rpc("get_active_listing_map_pins");
   const mapPins = (mapPinsData ?? []) as unknown as MapPin[];
 
+  // Nudges toward the next useful action instead of a flat "nothing here" -
+  // logged-out visitors get pointed at signing up, logged-in ones at
+  // posting their own listing (there's nothing else productive to do on an
+  // empty marketplace besides being the one to fill it).
+  const emptyStateAction = user
+    ? { href: "/listings/new", label: "Post a listing" }
+    : { href: "/signup", label: "Sign up to get started" };
+
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-6 py-16">
       <h1 className="text-2xl font-semibold tracking-tight">Browse listings</h1>
 
       <BrowseViewToggle
-        listView={<ListingsList listings={listings ?? []} />}
-        mapView={<ListingsMap pins={mapPins} />}
+        listView={<ListingsList listings={listings ?? []} emptyStateAction={emptyStateAction} />}
+        mapView={<ListingsMap pins={mapPins} emptyStateAction={emptyStateAction} />}
       />
     </main>
   );
