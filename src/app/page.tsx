@@ -32,7 +32,9 @@ export default function Home() {
             key={step.title}
             className="flex flex-col gap-2 rounded-xl border border-zinc-200 p-5 dark:border-zinc-800"
           >
-            <span className="text-sm font-medium text-zinc-400">Step {i + 1}</span>
+            <span className="text-sm font-medium text-primary-600 dark:text-primary-400">
+              Step {i + 1}
+            </span>
             <h2 className="text-lg font-semibold">{step.title}</h2>
             <p className="text-sm text-zinc-600 dark:text-zinc-400">{step.description}</p>
           </div>

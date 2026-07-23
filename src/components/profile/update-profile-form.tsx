@@ -60,7 +60,7 @@ export function UpdateProfileForm({
       <SubmitButton
         pending={isPending}
         pendingLabel="Saving…"
-        className="rounded-full bg-zinc-900 px-5 py-2 font-medium text-white dark:bg-zinc-50 dark:text-zinc-900"
+        className="rounded-full bg-primary-600 px-5 py-2 font-medium text-white transition-colors hover:bg-primary-700 dark:bg-primary-500 dark:text-zinc-950 dark:hover:bg-primary-400"
       >
         Save
       </SubmitButton>

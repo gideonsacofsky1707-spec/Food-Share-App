@@ -20,7 +20,7 @@ export function NotificationSubmitButton({
       className={`flex w-full items-center justify-between gap-3 rounded-xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
         read
           ? "border-zinc-200 dark:border-zinc-800"
-          : "border-zinc-900 bg-zinc-50 dark:border-zinc-50 dark:bg-zinc-900"
+          : "border-primary-600 bg-primary-50 dark:border-primary-400 dark:bg-primary-950/40"
       }`}
     >
       <span className="flex min-w-0 flex-col items-start gap-1">{children}</span>
