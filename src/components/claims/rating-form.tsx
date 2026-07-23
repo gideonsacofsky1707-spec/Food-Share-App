@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState } from "react";
 import { submitRatingAction, type RatingFormState } from "@/app/claims/actions";
 import { SubmitButton } from "@/components/submit-button";
 
@@ -22,7 +22,13 @@ export function RatingForm({
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        dispatch(new FormData(event.currentTarget));
+        const formData = new FormData(event.currentTarget);
+        // Without startTransition, a redirect() thrown by the action on
+        // success can't be intercepted by Next.js's router - the page just
+        // silently fails to navigate. See LoginForm for the full story.
+        startTransition(() => {
+          dispatch(formData);
+        });
       }}
       className="flex flex-col gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
     >
