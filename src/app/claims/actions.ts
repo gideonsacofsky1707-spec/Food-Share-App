@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { sendPushToUser } from "@/lib/push";
 
 export async function requestClaimAction(formData: FormData) {
   const supabase = await createClient();
@@ -26,6 +27,20 @@ export async function requestClaimAction(formData: FormData) {
     redirect(`/browse/${listingId}?error=${encodeURIComponent(message)}`);
   }
 
+  const { data: listingForPush } = await supabase
+    .from("listings")
+    .select("owner_id, title")
+    .eq("id", listingId)
+    .maybeSingle<{ owner_id: string; title: string }>();
+
+  if (listingForPush) {
+    await sendPushToUser(listingForPush.owner_id, {
+      title: "New pickup request",
+      body: `Someone requested "${listingForPush.title}"`,
+      url: `/listings/${listingId}/requests`,
+    });
+  }
+
   revalidatePath(`/browse/${listingId}`);
   redirect(`/browse/${listingId}?success=${encodeURIComponent("Request sent to the owner.")}`);
 }
@@ -45,6 +60,19 @@ export async function acceptClaimAction(formData: FormData) {
 
   if (error) {
     redirect(`/listings/${listingId}/requests?error=${encodeURIComponent(error.message)}`);
+  }
+
+  const [{ data: claimForPush }, { data: listingForPush }] = await Promise.all([
+    supabase.from("claims").select("claimer_id").eq("id", claimId).maybeSingle<{ claimer_id: string }>(),
+    supabase.from("listings").select("title").eq("id", listingId).maybeSingle<{ title: string }>(),
+  ]);
+
+  if (claimForPush && listingForPush) {
+    await sendPushToUser(claimForPush.claimer_id, {
+      title: "Request accepted",
+      body: `Your request for "${listingForPush.title}" was accepted`,
+      url: "/requests",
+    });
   }
 
   revalidatePath(`/listings/${listingId}/requests`);
@@ -70,6 +98,19 @@ export async function declineClaimAction(formData: FormData) {
 
   if (error) {
     redirect(`/listings/${listingId}/requests?error=${encodeURIComponent(error.message)}`);
+  }
+
+  const [{ data: claimForPush }, { data: listingForPush }] = await Promise.all([
+    supabase.from("claims").select("claimer_id").eq("id", claimId).maybeSingle<{ claimer_id: string }>(),
+    supabase.from("listings").select("title").eq("id", listingId).maybeSingle<{ title: string }>(),
+  ]);
+
+  if (claimForPush && listingForPush) {
+    await sendPushToUser(claimForPush.claimer_id, {
+      title: "Request declined",
+      body: `Your request for "${listingForPush.title}" was declined`,
+      url: "/requests",
+    });
   }
 
   revalidatePath(`/listings/${listingId}/requests`);

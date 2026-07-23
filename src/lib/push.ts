@@ -1,0 +1,67 @@
+import webpush from "web-push";
+import { createClient as createServiceRoleClient } from "@supabase/supabase-js";
+import type { PushSubscriptionRow } from "@/types/database";
+
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+
+if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT ?? "mailto:support@foodshare.app",
+    VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY,
+  );
+}
+
+export type PushPayload = { title: string; body: string; url: string };
+
+// Sends a real browser/device push to every subscription on file for
+// `userId`, in addition to (never instead of) the in-app notification the
+// caller already writes via the DB triggers in 0008_notifications.sql.
+//
+// Uses the service role key rather than the request-scoped, RLS-bound
+// client used everywhere else in the app: the caller here is the *other*
+// party in the exchange (e.g. the claimer whose request just got
+// accepted), not `userId` themselves, so the normal
+// `user_id = auth.uid()` policy on push_subscriptions would (correctly)
+// block reading these rows.
+export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!serviceRoleKey || !supabaseUrl) return;
+
+  try {
+    const supabase = createServiceRoleClient(supabaseUrl, serviceRoleKey);
+
+    const { data: subscriptions } = await supabase
+      .from("push_subscriptions")
+      .select("endpoint, p256dh, auth")
+      .eq("user_id", userId)
+      .returns<Pick<PushSubscriptionRow, "endpoint" | "p256dh" | "auth">[]>();
+
+    if (!subscriptions?.length) return;
+
+    await Promise.all(
+      subscriptions.map(async (sub) => {
+        try {
+          await webpush.sendNotification(
+            { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+            JSON.stringify(payload),
+          );
+        } catch (err) {
+          // 404/410 means the push service has permanently invalidated this
+          // endpoint (uninstalled, permission revoked, etc.) - clean it up
+          // so we stop paying for a doomed request on every future event.
+          const statusCode = (err as { statusCode?: number } | null)?.statusCode;
+          if (statusCode === 404 || statusCode === 410) {
+            await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+          }
+        }
+      }),
+    );
+  } catch {
+    // Push notifications are a best-effort enhancement - never let a
+    // delivery failure break the request/accept/decline action itself.
+  }
+}
