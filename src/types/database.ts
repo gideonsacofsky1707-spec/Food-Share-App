@@ -132,6 +132,15 @@ export interface Block {
   created_at: string;
 }
 
+export interface PushSubscriptionRow {
+  id: string;
+  user_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  created_at: string;
+}
+
 export type PublicProfile = Pick<
   User,
   "id" | "display_name" | "avatar_url" | "rating_avg" | "rating_count"

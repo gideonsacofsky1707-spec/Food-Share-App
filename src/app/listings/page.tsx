@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { deleteListingAction } from "@/app/listings/actions";
 import { DeleteListingForm } from "@/components/listings/delete-listing-button";
+import { PushPermissionPrompt } from "@/components/push/push-permission-prompt";
 import { formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
 import type { PublicListing } from "@/types/database";
@@ -50,6 +51,8 @@ export default async function ListingsPage({
           {success}
         </p>
       )}
+
+      <PushPermissionPrompt eligible={success === "Listing created"} />
 
       {!listings || listings.length === 0 ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">

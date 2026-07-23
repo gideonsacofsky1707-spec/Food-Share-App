@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requestClaimAction } from "@/app/claims/actions";
 import { ReportButton } from "@/components/reports/report-button";
+import { PushPermissionPrompt } from "@/components/push/push-permission-prompt";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
@@ -108,6 +109,8 @@ export default async function ListingDetailPage({
           {success}
         </p>
       )}
+
+      <PushPermissionPrompt eligible={success === "Request sent to the owner."} />
 
       <p className="break-words text-zinc-700 dark:text-zinc-300">{listing.description}</p>
 
