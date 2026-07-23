@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState } from "react";
 import { AddressAutocomplete } from "@/components/listings/address-autocomplete";
 import { SubmitButton } from "@/components/submit-button";
 import type { ListingFormState } from "@/app/listings/actions";
@@ -56,7 +56,14 @@ export function ListingForm({
       // failed submission untouched.
       onSubmit={(event) => {
         event.preventDefault();
-        dispatch(new FormData(event.currentTarget));
+        const formData = new FormData(event.currentTarget);
+        // Without startTransition, a redirect() thrown by the action on
+        // success can't be intercepted by Next.js's router - the page just
+        // silently fails to navigate, which is unrelated to (and doesn't
+        // require undoing) the manual-dispatch fix above.
+        startTransition(() => {
+          dispatch(formData);
+        });
       }}
       className="flex flex-col gap-4"
     >

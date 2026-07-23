@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { submitReportAction, type ReportFormState } from "@/app/reports/actions";
 import { SubmitButton } from "@/components/submit-button";
 
@@ -54,7 +54,14 @@ export function ReportButton({
       // ListingForm for why the action prop alone isn't enough for that.
       onSubmit={(event) => {
         event.preventDefault();
-        dispatch(new FormData(event.currentTarget));
+        const formData = new FormData(event.currentTarget);
+        // Without startTransition, isPending never tracks correctly (React
+        // warns "was called outside of a transition") - see LoginForm for
+        // the fuller story on why this matters even here, where the action
+        // doesn't redirect.
+        startTransition(() => {
+          dispatch(formData);
+        });
       }}
       className="flex flex-col gap-3 rounded-xl border border-zinc-200 p-4 dark:border-zinc-800"
     >

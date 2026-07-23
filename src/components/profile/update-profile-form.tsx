@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState } from "react";
 import { updateProfileAction, type UpdateProfileFormState } from "@/app/auth/actions";
 import { SubmitButton } from "@/components/submit-button";
 
@@ -20,7 +20,13 @@ export function UpdateProfileForm({
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        dispatch(new FormData(event.currentTarget));
+        const formData = new FormData(event.currentTarget);
+        // Without startTransition, a redirect() thrown by the action on
+        // success can't be intercepted by Next.js's router - the page just
+        // silently fails to navigate. See LoginForm for the full story.
+        startTransition(() => {
+          dispatch(formData);
+        });
       }}
       className="flex flex-col gap-4"
     >

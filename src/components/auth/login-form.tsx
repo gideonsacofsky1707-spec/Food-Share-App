@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { startTransition, useActionState } from "react";
 import { loginAction, type LoginFormState } from "@/app/auth/actions";
 import { SubmitButton } from "@/components/submit-button";
 
@@ -13,7 +13,16 @@ export function LoginForm() {
     <form
       onSubmit={(event) => {
         event.preventDefault();
-        dispatch(new FormData(event.currentTarget));
+        const formData = new FormData(event.currentTarget);
+        // Calling dispatch outside a transition means Next.js can't
+        // intercept a redirect() thrown by the action - the page just
+        // silently fails to navigate on success (see loginAction). Wrapping
+        // it fixes that same way the form's native `action` prop would,
+        // without reintroducing the uncontrolled-field reset that prop
+        // causes (see the comment on ListingForm's onSubmit).
+        startTransition(() => {
+          dispatch(formData);
+        });
       }}
       className="flex flex-col gap-4"
     >

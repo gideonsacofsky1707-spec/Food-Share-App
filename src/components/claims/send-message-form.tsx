@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { startTransition, useActionState, useEffect, useRef } from "react";
 import { sendMessageAction, type SendMessageFormState } from "@/app/claims/actions";
 import { SubmitButton } from "@/components/submit-button";
 
@@ -28,7 +28,14 @@ export function SendMessageForm({ claimId }: { claimId: string }) {
         ref={formRef}
         onSubmit={(event) => {
           event.preventDefault();
-          dispatch(new FormData(event.currentTarget));
+          const formData = new FormData(event.currentTarget);
+          // Without startTransition, isPending never tracks correctly (React
+          // warns "was called outside of a transition") - see LoginForm for
+          // the fuller story on why this matters even here, where the
+          // action doesn't redirect.
+          startTransition(() => {
+            dispatch(formData);
+          });
         }}
         className="flex gap-2"
       >
