@@ -1,4 +1,6 @@
-const CACHE_NAME = "foodshare-static-v1";
+// Bumped to force-clear any previously cached (and possibly now-stale)
+// entries on rollout - see the fetch handler below for why that matters.
+const CACHE_NAME = "foodshare-static-v2";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -15,14 +17,27 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Only cache same-origin static assets (Next's build output, icons, manifest).
-// Everything else (pages, API/Supabase calls) passes straight through to the
-// network since this app's content is dynamic and user-specific.
+// Next's build output (_next/static/*) is app CODE, not inert content - in
+// dev mode in particular, chunk URLs aren't content-hashed the way a
+// production build's are, so the same URL can legitimately serve different
+// code across rebuilds. Caching these cache-first (as an earlier version of
+// this file did) meant a browser that had ever cached a chunk would keep
+// running that exact stale JS on every future visit forever, regardless of
+// what the current source actually says - including any bug that's since
+// been fixed. Network-first (fall back to cache only when offline) fixes
+// that: a fix is picked up on the very next successful load, while still
+// giving a previously-visited page something to render when truly offline.
+function isAppCode(url) {
+  return url.origin === self.location.origin && url.pathname.startsWith("/_next/static/");
+}
+
+// True static assets (icons, manifest, favicon) are safe to cache-first -
+// their filenames are only ever changed deliberately by us, not reused
+// across unrelated content the way a dev-mode chunk URL can be.
 function isCacheableStatic(url) {
   return (
     url.origin === self.location.origin &&
-    (url.pathname.startsWith("/_next/static/") ||
-      url.pathname === "/manifest.webmanifest" ||
+    (url.pathname === "/manifest.webmanifest" ||
       /^\/icon-\d+(-maskable)?\.png$/.test(url.pathname) ||
       url.pathname === "/apple-icon.png" ||
       url.pathname === "/favicon.ico")
@@ -30,23 +45,42 @@ function isCacheableStatic(url) {
 }
 
 self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
   const url = new URL(event.request.url);
-  if (event.request.method !== "GET" || !isCacheableStatic(url)) {
+
+  if (isAppCode(url)) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        try {
+          const response = await fetch(event.request);
+          if (response.ok) {
+            cache.put(event.request, response.clone());
+          }
+          return response;
+        } catch (err) {
+          const cached = await cache.match(event.request);
+          if (cached) return cached;
+          throw err;
+        }
+      }),
+    );
     return;
   }
 
-  event.respondWith(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      const cached = await cache.match(event.request);
-      if (cached) return cached;
+  if (isCacheableStatic(url)) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then(async (cache) => {
+        const cached = await cache.match(event.request);
+        if (cached) return cached;
 
-      const response = await fetch(event.request);
-      if (response.ok) {
-        cache.put(event.request, response.clone());
-      }
-      return response;
-    }),
-  );
+        const response = await fetch(event.request);
+        if (response.ok) {
+          cache.put(event.request, response.clone());
+        }
+        return response;
+      }),
+    );
+  }
 });
 
 // Real browser/device push notifications (Web Push API), separate from the
