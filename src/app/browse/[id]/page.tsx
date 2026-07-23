@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requestClaimAction } from "@/app/claims/actions";
+import { ReportButton } from "@/components/reports/report-button";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateTime } from "@/lib/format";
 import { PUBLIC_LISTING_COLUMNS } from "@/lib/listings";
-import type { Claim, ListingPrivateLocation, PublicListing } from "@/types/database";
+import type { Claim, ListingPrivateLocation, PublicListing, User } from "@/types/database";
 
 export default async function ListingDetailPage({
   params,
@@ -40,6 +41,12 @@ export default async function ListingDetailPage({
     .maybeSingle<ListingPrivateLocation>();
 
   const isOwner = user?.id === listing.owner_id;
+
+  const { data: owner } = await supabase
+    .from("users")
+    .select("display_name")
+    .eq("id", listing.owner_id)
+    .maybeSingle<Pick<User, "display_name">>();
 
   let myClaim: Claim | null = null;
   if (user && !isOwner) {
@@ -81,6 +88,15 @@ export default async function ListingDetailPage({
           {listing.status}
         </span>
       </div>
+
+      {owner && (
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          Posted by{" "}
+          <Link href={`/users/${listing.owner_id}`} className="break-words underline">
+            {owner.display_name}
+          </Link>
+        </p>
+      )}
 
       {error && (
         <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
@@ -165,6 +181,8 @@ export default async function ListingDetailPage({
           </SubmitButton>
         </form>
       ) : null}
+
+      {user && !isOwner && <ReportButton reportedListingId={listing.id} label="Report listing" />}
     </main>
   );
 }

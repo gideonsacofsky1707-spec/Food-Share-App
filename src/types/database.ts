@@ -117,6 +117,19 @@ export interface Report {
   reported_user_id: string | null;
   reported_listing_id: string | null;
   reason: string;
+  details: string | null;
   status: ReportStatus;
   created_at: string;
 }
+
+export interface Block {
+  id: string;
+  blocker_id: string;
+  blocked_id: string;
+  created_at: string;
+}
+
+export type PublicProfile = Pick<
+  User,
+  "id" | "display_name" | "avatar_url" | "rating_avg" | "rating_count"
+>;

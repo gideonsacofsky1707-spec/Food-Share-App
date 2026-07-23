@@ -173,7 +173,12 @@ export async function sendMessageAction(
   const { error } = await supabase.from("messages").insert({ claim_id: claimId, sender_id: user.id, body });
 
   if (error) {
-    return { error: error.message };
+    // 42501 = blocked by RLS - most likely a block between the two
+    // participants (see 0015_reports_and_blocks.sql). Deliberately vague
+    // rather than confirming a block exists, same reasoning as
+    // requestClaimAction's fallback message below.
+    const message = error.code === "42501" ? "Could not send that message." : error.message;
+    return { error: message };
   }
 
   revalidatePath(`/claims/${claimId}`);

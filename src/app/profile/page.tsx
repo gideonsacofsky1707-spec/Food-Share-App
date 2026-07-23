@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signOutAction } from "@/app/auth/actions";
@@ -67,6 +68,10 @@ export default async function ProfilePage({
       </section>
 
       <UpdateProfileForm displayName={profile?.display_name ?? ""} email={user.email ?? ""} />
+
+      <Link href="/blocked" className="text-sm underline">
+        Blocked users
+      </Link>
     </main>
   );
 }

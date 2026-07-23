@@ -91,7 +91,9 @@ export default async function ListingRequestsPage({
                 )}
 
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <span className="break-words font-semibold">{claim.claimer.display_name}</span>
+                  <Link href={`/users/${claim.claimer_id}`} className="break-words font-semibold underline">
+                    {claim.claimer.display_name}
+                  </Link>
                   <span className="text-xs text-zinc-500 dark:text-zinc-500">
                     Requested {formatDateTime(claim.created_at)}
                   </span>
