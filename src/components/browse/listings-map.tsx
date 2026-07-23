@@ -45,7 +45,13 @@ function getDeviceLocation(): Promise<{ lat: number; lng: number } | null> {
   });
 }
 
-export function ListingsMap({ pins }: { pins: MapPin[] }) {
+export function ListingsMap({
+  pins,
+  emptyStateAction,
+}: {
+  pins: MapPin[];
+  emptyStateAction: { href: string; label: string };
+}) {
   const mapDivRef = useRef<HTMLDivElement>(null);
   const [selectedPin, setSelectedPin] = useState<MapPin | null>(null);
 
@@ -110,9 +116,17 @@ export function ListingsMap({ pins }: { pins: MapPin[] }) {
       />
 
       {pins.length === 0 && (
-        <p className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-md bg-white px-3 py-2 text-sm text-zinc-600 shadow dark:bg-zinc-900 dark:text-zinc-400">
-          Nothing available right now. Check back soon.
-        </p>
+        <div className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2 rounded-md bg-white px-4 py-3 text-center shadow dark:bg-zinc-900">
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            No listings nearby yet - be the first to share!
+          </p>
+          <Link
+            href={emptyStateAction.href}
+            className="text-sm font-medium text-primary-600 underline dark:text-primary-400"
+          >
+            {emptyStateAction.label}
+          </Link>
+        </div>
       )}
 
       {selectedPin && (

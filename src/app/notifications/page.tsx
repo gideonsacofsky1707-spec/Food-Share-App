@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { markNotificationReadAction } from "@/app/notifications/actions";
+import { EmptyState } from "@/components/empty-state";
 import { NotificationSubmitButton } from "@/components/notifications/notification-submit-button";
 import { formatDateTime } from "@/lib/format";
 import type { Notification } from "@/types/database";
@@ -36,9 +37,12 @@ export default async function NotificationsPage() {
       <h1 className="text-2xl font-semibold tracking-tight">Notifications</h1>
 
       {!notifications || notifications.length === 0 ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">
-          Nothing here yet. You&apos;ll see updates on your listings and requests as they happen.
-        </p>
+        <EmptyState
+          icon="🔔"
+          title="No notifications yet"
+          description="You'll be notified here when someone requests your listing, or when your own request gets a response. In the meantime, see what's nearby."
+          action={{ href: "/browse", label: "Browse listings" }}
+        />
       ) : (
         <ul className="flex flex-col gap-2">
           {notifications.map((notification) => (
