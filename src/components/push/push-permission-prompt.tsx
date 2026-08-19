@@ -1,17 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { subscribePushAction } from "@/app/push/actions";
+import { ensurePushSubscription, VAPID_PUBLIC_KEY } from "@/lib/push-client";
 
 const STORAGE_KEY = "foodshare-push-prompted";
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = atob(base64);
-  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
-}
 
 // Shown right after the "sensible moment" the caller identifies via
 // `eligible` (first listing created, or first request made) - never on
@@ -23,8 +15,20 @@ export function PushPermissionPrompt({ eligible }: { eligible: boolean }) {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    if (!eligible || !VAPID_PUBLIC_KEY) return;
+    if (!eligible) return;
     if (typeof window === "undefined") return;
+    if (!VAPID_PUBLIC_KEY) {
+      // Without this, a missing/unset env var makes the prompt silently
+      // never appear - indistinguishable from "user already dismissed it"
+      // or "browser doesn't support push" with nothing to diagnose from.
+      // See .env.example for how to generate a real key pair; NEXT_PUBLIC_
+      // vars must be set at *build* time, so setting this in Vercel still
+      // requires a redeploy to take effect.
+      console.warn(
+        "[push] NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set - the push permission prompt will never show.",
+      );
+      return;
+    }
     if (!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)) {
       return;
     }
@@ -44,15 +48,21 @@ export function PushPermissionPrompt({ eligible }: { eligible: boolean }) {
       const permission = await Notification.requestPermission();
       if (permission !== "granted") return;
 
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY!),
-      });
-
-      await subscribePushAction(
-        subscription.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } },
-      );
+      await ensurePushSubscription();
+    } catch (err) {
+      // Previously uncaught here (only a `finally`, no `catch`): the
+      // banner would just disappear as if this had succeeded, with
+      // nothing logged - and since Notification.permission is "granted"
+      // at this point regardless of outcome, the effect above can never
+      // show this banner again, so there was no way to retry either. The
+      // self-heal effect in ServiceWorkerRegistration is the actual retry
+      // path now; this is just making the failure visible.
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[push] failed to enable push notifications:", message);
+      // TEMP debug alert - remove once push delivery is confirmed working.
+      // See the matching alert in ServiceWorkerRegistration for why: no
+      // easy console access on a phone otherwise.
+      window.alert(`[push] enable failed: ${message}`);
     } finally {
       setBusy(false);
       setVisible(false);

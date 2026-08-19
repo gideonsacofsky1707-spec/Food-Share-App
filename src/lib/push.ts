@@ -11,6 +11,14 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
     VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY,
   );
+} else {
+  // Without this, sendPushToUser below just no-ops forever with no signal
+  // anywhere that pushes are misconfigured rather than merely "nobody's
+  // subscribed yet". Logged once at module load, not per-send.
+  console.warn(
+    "[push] VAPID keys are not set (NEXT_PUBLIC_VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY) - " +
+      "sendPushToUser will silently no-op for every call.",
+  );
 }
 
 export type PushPayload = { title: string; body: string; url: string };
@@ -26,10 +34,15 @@ export type PushPayload = { title: string; body: string; url: string };
 // `user_id = auth.uid()` policy on push_subscriptions would (correctly)
 // block reading these rows.
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
-  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return;
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return; // already warned at module load, above
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!serviceRoleKey || !supabaseUrl) return;
+  if (!serviceRoleKey || !supabaseUrl) {
+    console.warn(
+      "[push] SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL is not set - sendPushToUser can't read push_subscriptions and will no-op.",
+    );
+    return;
+  }
 
   try {
     const supabase = createServiceRoleClient(supabaseUrl, serviceRoleKey);
@@ -40,7 +53,13 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
       .eq("user_id", userId)
       .returns<Pick<PushSubscriptionRow, "endpoint" | "p256dh" | "auth">[]>();
 
-    if (!subscriptions?.length) return;
+    if (!subscriptions?.length) {
+      // Not necessarily a bug - the recipient may simply never have
+      // enabled push - but worth a log line so "nobody got a push" can be
+      // told apart from "the send itself failed" while diagnosing.
+      console.warn(`[push] no push_subscriptions on file for user ${userId} - nothing to send.`);
+      return;
+    }
 
     await Promise.all(
       subscriptions.map(async (sub) => {
@@ -56,12 +75,27 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
           const statusCode = (err as { statusCode?: number } | null)?.statusCode;
           if (statusCode === 404 || statusCode === 410) {
             await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+          } else {
+            // Anything else (most commonly a 400/401/403 from the push
+            // service - e.g. the subscription was created against a
+            // different VAPID public key than the one currently
+            // configured, which the service rejects rather than silently
+            // accepting) was previously swallowed here with zero signal.
+            // That made "push just doesn't arrive" indistinguishable from
+            // "everything's fine, nobody's subscribed" - log it instead.
+            console.error(
+              `[push] sendNotification failed for endpoint ${sub.endpoint.slice(0, 60)}...`,
+              statusCode ?? "",
+              err instanceof Error ? err.message : err,
+            );
           }
         }
       }),
     );
-  } catch {
+  } catch (err) {
     // Push notifications are a best-effort enhancement - never let a
-    // delivery failure break the request/accept/decline action itself.
+    // delivery failure break the request/accept/decline action itself -
+    // but still log it, for the same reason as above.
+    console.error("[push] sendPushToUser failed:", err instanceof Error ? err.message : err);
   }
 }

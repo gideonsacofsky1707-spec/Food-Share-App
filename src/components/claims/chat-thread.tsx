@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format";
+import { useRefreshOnForeground } from "@/lib/use-refresh-on-foreground";
 import type { Message } from "@/types/database";
 
 // formatDateTime() uses toLocaleString(), which depends on the runtime's
@@ -38,6 +39,7 @@ export function ChatThread({
   otherPartyName: string;
 }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
+  useRefreshOnForeground();
 
   // Keep in sync with the server-fetched list across navigations (e.g.
   // after sending a message triggers a redirect back to this same page).
@@ -63,24 +65,14 @@ export function ChatThread({
           filter: `claim_id=eq.${claimId}`,
         },
         (payload) => {
-          // TEMP debug logging - remove once live delivery is confirmed working.
-          console.log("[chat-thread] received INSERT", payload.new);
           setMessages((prev) =>
             prev.some((m) => m.id === payload.new.id) ? prev : [...prev, payload.new],
           );
         },
       )
-      // TEMP debug logging - remove once live delivery is confirmed working.
-      // status is one of SUBSCRIBED / TIMED_OUT / CLOSED / CHANNEL_ERROR; err
-      // carries the reason when Postgres/Realtime rejects the subscription
-      // (e.g. a permission or replication problem), which otherwise fails
-      // silently with no visible symptom other than "it just doesn't update".
-      .subscribe((status, err) => {
-        console.log("[chat-thread] subscription status:", status, err ?? "");
-      });
+      .subscribe();
 
     return () => {
-      console.log("[chat-thread] unsubscribing for claim", claimId);
       supabase.removeChannel(channel);
     };
   }, [claimId]);

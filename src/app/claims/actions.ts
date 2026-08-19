@@ -214,12 +214,54 @@ export async function sendMessageAction(
   const { error } = await supabase.from("messages").insert({ claim_id: claimId, sender_id: user.id, body });
 
   if (error) {
+    // TEMP debug logging - remove once chat push is confirmed working.
+    // The client-facing message is deliberately vague below (see the
+    // comment on that), so this is the only place the real reason a send
+    // failed is visible at all - relevant right now because a missing
+    // [push] chat: log turned out to plausibly mean the insert itself
+    // never succeeded, not that the push code was unreached for some
+    // other reason.
+    console.error(`[chat] messages insert failed (code=${error.code}):`, error.message);
     // 42501 = blocked by RLS - most likely a block between the two
     // participants (see 0015_reports_and_blocks.sql). Deliberately vague
     // rather than confirming a block exists, same reasoning as
     // requestClaimAction's fallback message below.
     const message = error.code === "42501" ? "Could not send that message." : error.message;
     return { error: message };
+  }
+
+  // Push was originally only wired up for request/accept/decline (see
+  // 0009_messages.sql's notify_on_new_message trigger for the in-app-only
+  // equivalent this mirrors) - a new chat message never triggered a push
+  // at all, so the recipient only found out by having the app open. Same
+  // "whichever participant didn't send it" logic as that trigger, just
+  // computed here instead of in Postgres since sendPushToUser needs the
+  // service-role client rather than RLS.
+  const { data: claimForPush, error: claimForPushError } = await supabase
+    .from("claims")
+    .select("claimer_id, listing:listings(owner_id, title)")
+    .eq("id", claimId)
+    .maybeSingle<{ claimer_id: string; listing: { owner_id: string; title: string } | null }>();
+
+  // TEMP debug logging - remove once chat push delivery is confirmed
+  // working. The recipient reported still not getting a push after this
+  // was wired up despite request/accept/decline pushes working fine, so
+  // rather than guess again, log exactly where this lookup lands.
+  if (claimForPushError) {
+    console.error("[push] chat: failed to look up claim/listing:", claimForPushError.message);
+  } else {
+    console.log("[push] chat: claimForPush =", JSON.stringify(claimForPush));
+  }
+
+  if (claimForPush?.listing) {
+    const recipientId =
+      user.id === claimForPush.claimer_id ? claimForPush.listing.owner_id : claimForPush.claimer_id;
+    console.log(`[push] chat: sending to recipientId=${recipientId} (sender=${user.id})`);
+    await sendPushToUser(recipientId, {
+      title: "New message",
+      body: `You have a new message about "${claimForPush.listing.title}"`,
+      url: `/claims/${claimId}`,
+    });
   }
 
   revalidatePath(`/claims/${claimId}`);
