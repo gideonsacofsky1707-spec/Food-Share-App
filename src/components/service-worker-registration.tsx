@@ -24,10 +24,14 @@ export function ServiceWorkerRegistration() {
     if (typeof window === "undefined" || !("Notification" in window)) return;
     if (Notification.permission !== "granted") return;
     ensurePushSubscription().catch((err) => {
-      console.error(
-        "[push] failed to (re)establish push subscription on load:",
-        err instanceof Error ? err.message : err,
-      );
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[push] failed to (re)establish push subscription on load:", message);
+      // TEMP debug alert - remove once push delivery is confirmed working.
+      // A phone with no easy console access (no Mac/cable for Safari Web
+      // Inspector) has no other way to see this failure at all otherwise.
+      if (typeof window !== "undefined") {
+        window.alert(`[push] subscribe failed: ${message}`);
+      }
     });
   }, []);
 

@@ -57,10 +57,12 @@ export function PushPermissionPrompt({ eligible }: { eligible: boolean }) {
       // show this banner again, so there was no way to retry either. The
       // self-heal effect in ServiceWorkerRegistration is the actual retry
       // path now; this is just making the failure visible.
-      console.error(
-        "[push] failed to enable push notifications:",
-        err instanceof Error ? err.message : err,
-      );
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[push] failed to enable push notifications:", message);
+      // TEMP debug alert - remove once push delivery is confirmed working.
+      // See the matching alert in ServiceWorkerRegistration for why: no
+      // easy console access on a phone otherwise.
+      window.alert(`[push] enable failed: ${message}`);
     } finally {
       setBusy(false);
       setVisible(false);
