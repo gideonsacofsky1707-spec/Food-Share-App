@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { formatDateTime } from "@/lib/format";
+import { useRefreshOnForeground } from "@/lib/use-refresh-on-foreground";
 import type { Message } from "@/types/database";
 
 // formatDateTime() uses toLocaleString(), which depends on the runtime's
@@ -38,6 +39,7 @@ export function ChatThread({
   otherPartyName: string;
 }) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
+  useRefreshOnForeground();
 
   // Keep in sync with the server-fetched list across navigations (e.g.
   // after sending a message triggers a redirect back to this same page).

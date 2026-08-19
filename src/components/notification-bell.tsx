@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRefreshOnForeground } from "@/lib/use-refresh-on-foreground";
 
 const NOTIFICATIONS_PATH = "/notifications";
 
@@ -15,6 +16,7 @@ export function NotificationBell({
   initialUnreadCount: number;
 }) {
   const pathname = usePathname();
+  useRefreshOnForeground();
 
   // If this mounts already on /notifications (a hard load or refresh), skip
   // straight to 0 - the page marks everything read before it even renders,
