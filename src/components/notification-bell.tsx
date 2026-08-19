@@ -64,10 +64,7 @@ export function NotificationBell({
           setUnreadCount((count) => count + 1);
         },
       )
-      // TEMP debug logging - remove once live delivery is confirmed working.
-      .subscribe((status, err) => {
-        console.log("[notification-bell] subscription status:", status, err ?? "");
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);

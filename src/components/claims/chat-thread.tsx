@@ -63,24 +63,14 @@ export function ChatThread({
           filter: `claim_id=eq.${claimId}`,
         },
         (payload) => {
-          // TEMP debug logging - remove once live delivery is confirmed working.
-          console.log("[chat-thread] received INSERT", payload.new);
           setMessages((prev) =>
             prev.some((m) => m.id === payload.new.id) ? prev : [...prev, payload.new],
           );
         },
       )
-      // TEMP debug logging - remove once live delivery is confirmed working.
-      // status is one of SUBSCRIBED / TIMED_OUT / CLOSED / CHANNEL_ERROR; err
-      // carries the reason when Postgres/Realtime rejects the subscription
-      // (e.g. a permission or replication problem), which otherwise fails
-      // silently with no visible symptom other than "it just doesn't update".
-      .subscribe((status, err) => {
-        console.log("[chat-thread] subscription status:", status, err ?? "");
-      });
+      .subscribe();
 
     return () => {
-      console.log("[chat-thread] unsubscribing for claim", claimId);
       supabase.removeChannel(channel);
     };
   }, [claimId]);

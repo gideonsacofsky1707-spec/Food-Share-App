@@ -53,7 +53,13 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
       .eq("user_id", userId)
       .returns<Pick<PushSubscriptionRow, "endpoint" | "p256dh" | "auth">[]>();
 
-    if (!subscriptions?.length) return;
+    if (!subscriptions?.length) {
+      // Not necessarily a bug - the recipient may simply never have
+      // enabled push - but worth a log line so "nobody got a push" can be
+      // told apart from "the send itself failed" while diagnosing.
+      console.warn(`[push] no push_subscriptions on file for user ${userId} - nothing to send.`);
+      return;
+    }
 
     await Promise.all(
       subscriptions.map(async (sub) => {
@@ -69,12 +75,27 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
           const statusCode = (err as { statusCode?: number } | null)?.statusCode;
           if (statusCode === 404 || statusCode === 410) {
             await supabase.from("push_subscriptions").delete().eq("endpoint", sub.endpoint);
+          } else {
+            // Anything else (most commonly a 400/401/403 from the push
+            // service - e.g. the subscription was created against a
+            // different VAPID public key than the one currently
+            // configured, which the service rejects rather than silently
+            // accepting) was previously swallowed here with zero signal.
+            // That made "push just doesn't arrive" indistinguishable from
+            // "everything's fine, nobody's subscribed" - log it instead.
+            console.error(
+              `[push] sendNotification failed for endpoint ${sub.endpoint.slice(0, 60)}...`,
+              statusCode ?? "",
+              err instanceof Error ? err.message : err,
+            );
           }
         }
       }),
     );
-  } catch {
+  } catch (err) {
     // Push notifications are a best-effort enhancement - never let a
-    // delivery failure break the request/accept/decline action itself.
+    // delivery failure break the request/accept/decline action itself -
+    // but still log it, for the same reason as above.
+    console.error("[push] sendPushToUser failed:", err instanceof Error ? err.message : err);
   }
 }

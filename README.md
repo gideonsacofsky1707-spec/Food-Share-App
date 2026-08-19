@@ -244,13 +244,16 @@ policy, which would leak other users' rows to every subscriber instead.
 
 #### Debugging a stalled subscription
 
-`ChatThread` and `NotificationBell` both log their subscription status
-(`console.log("[chat-thread] subscription status:", ...)` /
-`[notification-bell] ...`) - open the browser console and look for
-`SUBSCRIBED` after the page loads. Anything else (`CHANNEL_ERROR`,
-`TIMED_OUT`) means the channel never actually attached, and the logged
-`err` usually says why. These are marked `// TEMP debug logging` and
-should come back out once live delivery is confirmed working end to end.
+Confirmed working end to end (both the nav bell and the chat thread
+update live, no manual refresh needed) once `0018` actually ran - the
+temporary `.subscribe((status, err) => console.log(...))` logging that
+was in `ChatThread` and `NotificationBell` while chasing this has been
+removed accordingly. If a subscription ever stalls again, add that same
+logging back to the relevant `.subscribe()` call first - status is one of
+`SUBSCRIBED` / `TIMED_OUT` / `CLOSED` / `CHANNEL_ERROR`, and the logged
+`err` usually says why a non-`SUBSCRIBED` status happened, which
+otherwise fails completely silently ("it just doesn't update" with
+nothing to diagnose from).
 
 If the status never even logs, or logs `CHANNEL_ERROR` with no useful
 detail, check from the database side - run in the SQL editor:
