@@ -23,12 +23,27 @@ export function useRefreshOnForeground() {
   const router = useRouter();
 
   useEffect(() => {
-    function handleVisibilityChange() {
+    function refreshIfVisible() {
       if (document.visibilityState === "visible") {
         router.refresh();
       }
     }
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+    // visibilitychange alone turned out not to be reliably firing for a
+    // standalone (Home Screen) PWA on iOS resuming from the background - a
+    // known WebKit quirk, not specific to this app. pageshow (fired on a
+    // bfcache restore, which is closer to what iOS actually does when
+    // resuming a suspended standalone app than a fresh navigation) and
+    // focus (fired when the webview regains focus, a proxy for the same
+    // "came back to foreground" moment) both catch cases the other can
+    // miss, so all three are wired to the same handler rather than picking
+    // one - each is a no-op call to router.refresh() when redundant.
+    document.addEventListener("visibilitychange", refreshIfVisible);
+    window.addEventListener("pageshow", refreshIfVisible);
+    window.addEventListener("focus", refreshIfVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+      window.removeEventListener("pageshow", refreshIfVisible);
+      window.removeEventListener("focus", refreshIfVisible);
+    };
   }, [router]);
 }
