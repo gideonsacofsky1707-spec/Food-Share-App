@@ -90,6 +90,20 @@ Run each migration once, in order, in your project's Supabase SQL editor
   `get_listing_private_location()` to cover `completed` claims, not just
   `accepted` ones. Required before "Mark as collected" on `/claims/[id]`
   or rating counts on `/profile` will work.
+- [`0015_reports_and_blocks.sql`](./supabase/migrations/0015_reports_and_blocks.sql),
+  [`0016_report_history_and_admin.sql`](./supabase/migrations/0016_report_history_and_admin.sql) —
+  reporting/blocking + a minimal admin/ban system.
+- [`0017_push_subscriptions.sql`](./supabase/migrations/0017_push_subscriptions.sql) —
+  `push_subscriptions` table for real Web Push (see "Push notifications"
+  below). Required before `PushPermissionPrompt` can store a subscription.
+- [`0018_reensure_realtime_publication.sql`](./supabase/migrations/0018_reensure_realtime_publication.sql) —
+  re-applies `0012`: the Replication page in the dashboard was found
+  showing no tables in `supabase_realtime` at all, despite `0012` existing
+  specifically to make that state impossible to end up in from a code
+  change. Same idempotent create-publication-if-missing /
+  add-table-if-missing logic as `0012` - see "Debugging a stalled
+  subscription" below for what could put a project back in that state
+  outside of the migrations themselves.
 
 ## Project structure
 
@@ -251,6 +265,38 @@ where pubname = 'supabase_realtime';
 `0010_enable_realtime.sql` adds). If either is missing, that migration
 was never applied - Realtime otherwise never broadcasts changes for that
 table at all, no matter how correct the RLS or the client code is.
+
+**If the publication comes back completely empty again** (not just
+missing these two tables - the Replication page showing nothing at all),
+re-run `0018_reensure_realtime_publication.sql`. Nothing in this repo's
+own migrations (`0013`-`0017`) touches `supabase_realtime` or
+drops/recreates the `messages`/`notifications` tables, so a code change
+in this repo isn't a plausible explanation for that on its own - a table
+being dropped and recreated does silently drop its publication
+membership, but that hasn't happened here per the migration history.
+More likely causes, in roughly descending order of likelihood:
+
+1. `0012` (or now `0018`) was written/documented but never actually
+   executed against the live project - the same gap this project has hit
+   before with other "documented in a migration file, not yet run
+   against Supabase" and "documented in `.env.example`, not yet set in
+   Vercel" steps. Worth treating as the default explanation until ruled
+   out, since it requires no external event at all.
+2. Someone toggled a table off (or the whole publication) from the
+   dashboard's Database -> Replication UI - that writes `ALTER
+   PUBLICATION ... DROP TABLE` (or drops the publication) directly,
+   completely outside of migration history, so it wouldn't show up in
+   `git log` no matter how carefully you look.
+3. The project was restored from a backup/PITR snapshot, or paused and
+   resumed, from a point before `0012` had been applied - restoring
+   database *contents* doesn't necessarily restore custom Realtime
+   publication config the same way, depending on how the restore was
+   performed.
+
+There's no way to tell these apart from the SQL migration history alone -
+Supabase's dashboard/project activity log (Settings -> ... or contacting
+Supabase support for the project's audit log, if available on the plan)
+is the only place that would show *which* of these actually happened.
 
 ### Ratings
 
