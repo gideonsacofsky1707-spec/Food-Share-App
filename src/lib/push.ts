@@ -11,6 +11,14 @@ if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
     VAPID_PUBLIC_KEY,
     VAPID_PRIVATE_KEY,
   );
+} else {
+  // Without this, sendPushToUser below just no-ops forever with no signal
+  // anywhere that pushes are misconfigured rather than merely "nobody's
+  // subscribed yet". Logged once at module load, not per-send.
+  console.warn(
+    "[push] VAPID keys are not set (NEXT_PUBLIC_VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY) - " +
+      "sendPushToUser will silently no-op for every call.",
+  );
 }
 
 export type PushPayload = { title: string; body: string; url: string };
@@ -26,10 +34,15 @@ export type PushPayload = { title: string; body: string; url: string };
 // `user_id = auth.uid()` policy on push_subscriptions would (correctly)
 // block reading these rows.
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<void> {
-  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return;
+  if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) return; // already warned at module load, above
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!serviceRoleKey || !supabaseUrl) return;
+  if (!serviceRoleKey || !supabaseUrl) {
+    console.warn(
+      "[push] SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL is not set - sendPushToUser can't read push_subscriptions and will no-op.",
+    );
+    return;
+  }
 
   try {
     const supabase = createServiceRoleClient(supabaseUrl, serviceRoleKey);
