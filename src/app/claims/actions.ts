@@ -229,15 +229,26 @@ export async function sendMessageAction(
   // "whichever participant didn't send it" logic as that trigger, just
   // computed here instead of in Postgres since sendPushToUser needs the
   // service-role client rather than RLS.
-  const { data: claimForPush } = await supabase
+  const { data: claimForPush, error: claimForPushError } = await supabase
     .from("claims")
     .select("claimer_id, listing:listings(owner_id, title)")
     .eq("id", claimId)
     .maybeSingle<{ claimer_id: string; listing: { owner_id: string; title: string } | null }>();
 
+  // TEMP debug logging - remove once chat push delivery is confirmed
+  // working. The recipient reported still not getting a push after this
+  // was wired up despite request/accept/decline pushes working fine, so
+  // rather than guess again, log exactly where this lookup lands.
+  if (claimForPushError) {
+    console.error("[push] chat: failed to look up claim/listing:", claimForPushError.message);
+  } else {
+    console.log("[push] chat: claimForPush =", JSON.stringify(claimForPush));
+  }
+
   if (claimForPush?.listing) {
     const recipientId =
       user.id === claimForPush.claimer_id ? claimForPush.listing.owner_id : claimForPush.claimer_id;
+    console.log(`[push] chat: sending to recipientId=${recipientId} (sender=${user.id})`);
     await sendPushToUser(recipientId, {
       title: "New message",
       body: `You have a new message about "${claimForPush.listing.title}"`,
