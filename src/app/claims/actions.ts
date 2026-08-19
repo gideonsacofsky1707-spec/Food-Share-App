@@ -222,6 +222,29 @@ export async function sendMessageAction(
     return { error: message };
   }
 
+  // Push was originally only wired up for request/accept/decline (see
+  // 0009_messages.sql's notify_on_new_message trigger for the in-app-only
+  // equivalent this mirrors) - a new chat message never triggered a push
+  // at all, so the recipient only found out by having the app open. Same
+  // "whichever participant didn't send it" logic as that trigger, just
+  // computed here instead of in Postgres since sendPushToUser needs the
+  // service-role client rather than RLS.
+  const { data: claimForPush } = await supabase
+    .from("claims")
+    .select("claimer_id, listing:listings(owner_id, title)")
+    .eq("id", claimId)
+    .maybeSingle<{ claimer_id: string; listing: { owner_id: string; title: string } | null }>();
+
+  if (claimForPush?.listing) {
+    const recipientId =
+      user.id === claimForPush.claimer_id ? claimForPush.listing.owner_id : claimForPush.claimer_id;
+    await sendPushToUser(recipientId, {
+      title: "New message",
+      body: `You have a new message about "${claimForPush.listing.title}"`,
+      url: `/claims/${claimId}`,
+    });
+  }
+
   revalidatePath(`/claims/${claimId}`);
   return {};
 }
