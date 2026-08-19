@@ -214,6 +214,14 @@ export async function sendMessageAction(
   const { error } = await supabase.from("messages").insert({ claim_id: claimId, sender_id: user.id, body });
 
   if (error) {
+    // TEMP debug logging - remove once chat push is confirmed working.
+    // The client-facing message is deliberately vague below (see the
+    // comment on that), so this is the only place the real reason a send
+    // failed is visible at all - relevant right now because a missing
+    // [push] chat: log turned out to plausibly mean the insert itself
+    // never succeeded, not that the push code was unreached for some
+    // other reason.
+    console.error(`[chat] messages insert failed (code=${error.code}):`, error.message);
     // 42501 = blocked by RLS - most likely a block between the two
     // participants (see 0015_reports_and_blocks.sql). Deliberately vague
     // rather than confirming a block exists, same reasoning as
